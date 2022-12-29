@@ -59,13 +59,13 @@ namespace ExpandScada.SignalsGateway
 
     public class Signal<T> : Signal
     {
-
+        Type signalType;
         private T _value;
         public override Type SignalType
         {
             get
             {
-                return typeof(T);
+                return signalType;
             }
         }
 
@@ -85,7 +85,7 @@ namespace ExpandScada.SignalsGateway
 
         public Signal()
         {
-
+            signalType = typeof(T); 
         }
 
         public Signal(int id, string name, string description)
@@ -93,6 +93,7 @@ namespace ExpandScada.SignalsGateway
             this.id = id;
             this.name = name;
             this.description = description;
+            signalType = typeof(T);
         }
 
         

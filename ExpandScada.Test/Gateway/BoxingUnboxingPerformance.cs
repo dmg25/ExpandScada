@@ -55,6 +55,13 @@ namespace ExpandScada.Test.Gateway
         [Test]
         public void BoxingUnboxing()
         {
+            // warming 
+            foreach (var signal in SignalStorage.allSignals)
+            {
+                object tmp = signal.Value.Value;
+                signal.Value.Value = tmp;
+            }
+
 
             // get all values to local vars and calculate time
             int tmpInt = 0;
@@ -121,22 +128,22 @@ namespace ExpandScada.Test.Gateway
 
             for (int i = 0; i < 1000; i++)
             {
-                SignalStorage.allSignals[i].Value = tmpDouble;
+                SignalStorage.allSignals[i].Value = (int)tmpDouble;
             }
 
             for (int i = 1000; i < 2000; i++)
             {
-                SignalStorage.allSignals[i].Value = tmpFloat;
+                SignalStorage.allSignals[i].Value = (uint)tmpFloat;
             }
 
             for (int i = 2000; i < 3000; i++)
             {
-                SignalStorage.allSignals[i].Value = tmpDouble;
+                SignalStorage.allSignals[i].Value = (float)tmpDouble;
             }
 
             for (int i = 3000; i < 4000; i++)
             {
-                SignalStorage.allSignals[i].Value = tmpUInt;
+                SignalStorage.allSignals[i].Value = (double)tmpUInt;
             }
 
             DateTime afterDiffSetting = DateTime.Now;
@@ -151,3 +158,17 @@ namespace ExpandScada.Test.Gateway
         }
     }
 }
+
+
+/*  First implementation
+ *  
+ *  Getting: 0,2225 ms
+    Same setting: 0,1184 ms
+    Diff setting: 0,1156 ms
+ * 
+ * 
+ * 
+ * 
+ * */
+
+
