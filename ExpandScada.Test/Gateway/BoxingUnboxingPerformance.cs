@@ -7,7 +7,7 @@ using ExpandScada.SignalsGateway;
 
 namespace ExpandScada.Test.Gateway
 {
-    // TODO change are assert aonditions
+    // TODO change are assert conditions
     /// <summary>
     /// !!!TIME LIMITS ARE VALID FOR MY PC ONLY!!!
     /// </summary>
