@@ -98,4 +98,56 @@ namespace ExpandScada.SignalsGateway
 
         
     }
+
+
+
+
+    public class SignalDouble : INotifyPropertyChanged
+    {
+        public int id;
+        public string name;
+        public string description;
+        Type signalType;
+        private double _value;
+        public Type SignalType
+        {
+            get
+            {
+                return signalType;
+            }
+        }
+
+        public double Value
+        {
+            get
+            {
+                return this._value;
+            }
+            set
+            {
+                this._value = value;
+                this.OnPropertyChanged();
+            }
+        }
+
+
+        public SignalDouble()
+        {
+            signalType = typeof(double);
+        }
+
+        public SignalDouble(int id, string name, string description)
+        {
+            this.id = id;
+            this.name = name;
+            this.description = description;
+            signalType = typeof(double);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyChanged([CallerMemberName] string prop = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
+        }
+    }
 }

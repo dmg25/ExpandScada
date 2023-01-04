@@ -7,17 +7,16 @@ using ExpandScada.SignalsGateway;
 
 namespace ExpandScada.Test.Gateway
 {
+    // TODO change are assert aonditions
+    /// <summary>
+    /// !!!TIME LIMITS ARE VALID FOR MY PC ONLY!!!
+    /// </summary>
     public class BoxingUnboxingPerformance
     {
-        /*
-         *  - each step calculate time and write it somewhere as result
-         *  - create N num of different signals with different simple types
-         *  - get all values in local array/list
-         *  - set all SAME values to each signal M times
-         *  - set all DIFFERENT values, which requires type conversion
-         *  
-         * 
-         * */
+        const double GETTING_LIMIT = 0.24d;
+        const double SAME_SETTING_LIMIT = 0.15d;
+        const double DIFF_SETTING_LIMIT = 0.15d;
+
 
         [SetUp]
         public void Setup()
@@ -50,6 +49,8 @@ namespace ExpandScada.Test.Gateway
                 indexCounter++;
             }
 
+
+
         }
 
         [Test]
@@ -60,7 +61,10 @@ namespace ExpandScada.Test.Gateway
             {
                 object tmp = signal.Value.Value;
                 signal.Value.Value = tmp;
+                //signal.Value.PropertyChanged += Value_PropertyChanged;
             }
+
+
 
 
             // get all values to local vars and calculate time
@@ -154,8 +158,24 @@ namespace ExpandScada.Test.Gateway
             TestContext.WriteLine($"Same setting: {sameSettingResult.TotalMilliseconds} ms");
             TestContext.WriteLine($"Diff setting: {diffSettingResult.TotalMilliseconds} ms");
 
+            Assert.IsTrue(gettingResult.TotalMilliseconds < GETTING_LIMIT);
+            Assert.IsTrue(sameSettingResult.TotalMilliseconds < SAME_SETTING_LIMIT);
+            Assert.IsTrue(diffSettingResult.TotalMilliseconds < DIFF_SETTING_LIMIT);
+
             Assert.Pass();
         }
+
+        //private void Value_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        //{
+        //    if (e.PropertyName == "Value")
+        //    {
+        //        var tmp = ((Signal)sender).Value;
+        //    }
+
+            
+        //}
+
+        
     }
 }
 
@@ -165,9 +185,20 @@ namespace ExpandScada.Test.Gateway
  *  Getting: 0,2225 ms
     Same setting: 0,1184 ms
     Diff setting: 0,1156 ms
+ * **************************************
+ * 
+ * First implementation with Get function by property notification (every setting = setting + getting time) - good!
+ *  Getting: 0,2329 ms
+    Same setting: 0,3582 ms
+    Diff setting: 0,2889 ms
  * 
  * 
- * 
+ *  Only double signal without objects
+  
+ *  Getting: 0,1847 ms
+    Same setting: 0,023 ms
+    Diff setting: 0,0951 ms
+ * **************************************
  * 
  * */
 
