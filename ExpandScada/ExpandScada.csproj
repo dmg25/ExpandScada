@@ -15,8 +15,4 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Communication\" />
-  </ItemGroup>
-
 </Project>
