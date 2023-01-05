@@ -32,6 +32,10 @@ namespace ExpandScada.SignalsGateway
         public int id;
         public string name;
         public string description;
+        /// <summary>
+        /// if this field is true - every new value will be checked on equality and if this value is not equal, will work event PropertyChangedNotEqual
+        /// </summary>
+        public bool checkEquality = false;
 
         public virtual object Value
         {
@@ -49,13 +53,17 @@ namespace ExpandScada.SignalsGateway
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
         }
+
+        public event PropertyChangedEventHandler PropertyChangedNotEqual;
+        /// <summary>
+        /// Will be invoked only if the new value is not equal.
+        /// </summary>
+        /// <param name="prop"></param>
+        public void OnPropertyChangedNotEqual([CallerMemberName] string prop = "")
+        {
+            PropertyChangedNotEqual?.Invoke(this, new PropertyChangedEventArgs(prop));
+        }
     }
-
-
-
-
-
-
 
     public class Signal<T> : Signal
     {
@@ -77,6 +85,11 @@ namespace ExpandScada.SignalsGateway
             }
             set
             {
+                if (checkEquality && !EqualityComparer<T>.Default.Equals(_value, (T)value))
+                {
+                    OnPropertyChangedNotEqual();
+                }
+
                 this._value = (T)value;
                 this.OnPropertyChanged();
             }
