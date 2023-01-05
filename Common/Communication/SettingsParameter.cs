@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ExpandScada.Communication
+namespace Common.Communication
 {
     /// <summary>
     /// Represents one parameter for a settings string for each signal or protocol of communication

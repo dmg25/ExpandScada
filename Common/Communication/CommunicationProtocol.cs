@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ExpandScada.SignalsGateway;
+using Common.Gateway;
 
-namespace ExpandScada.Communication
+namespace Common.Communication
 {
         /*      HOW IT WORKS
         *  - There is Start method - does any connections and starts loops if the protocol supports it

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ExpandScada.SignalsGateway
+namespace Common.Gateway
 {
     /*      Plan
      *  - create abstract class for Signal. What must be there? 
@@ -98,7 +98,7 @@ namespace ExpandScada.SignalsGateway
 
         public Signal()
         {
-            signalType = typeof(T); 
+            signalType = typeof(T);
         }
 
         public Signal(int id, string name, string description)
@@ -109,7 +109,8 @@ namespace ExpandScada.SignalsGateway
             signalType = typeof(T);
         }
 
-        
+
     }
 
 }
+
