@@ -13,10 +13,18 @@ namespace Common.Communication
     /// </summary>
     public abstract class SettingsParameter : INotifyPropertyChanged
     {
+        public string Name { get; set; }
+        public string Description { get; set; }
+
         public virtual object Value
         {
             get;
             set;
+        }
+
+        public virtual Type SignalType
+        {
+            get;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -25,6 +33,10 @@ namespace Common.Communication
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
         }
 
+        public virtual object GetTypedValueByString(string val)
+        {
+            throw new NotImplementedException();
+        }
 
     }
 
@@ -44,23 +56,29 @@ namespace Common.Communication
             }
         }
 
-        public string Name { get; set; }
-        public string Description { get; set; }
+        public override Type SignalType
+        {
+            get
+            {
+                return typeof(T);
+            }
+        }
+
+        
         public bool MustBeUnique { get; set; }
-
         public readonly Func<T, string> validation = null;
-
+        public T DefaultValue { get; set; }
 
         public SettingsParameter() { }
 
         public SettingsParameter(
-            T value,
+            T defaultValue,
             string name,
             string description,
             Func<T, string> validation = null,
             bool mustBeUnique = false)
         {
-            Value = value;
+            DefaultValue = defaultValue;
             Name = name;
             Description = description;
             this.validation = validation;
@@ -81,7 +99,10 @@ namespace Common.Communication
             get { throw new NotImplementedException(); }
         }
 
-
+        public override object GetTypedValueByString(string val)
+        {
+            return (T)Convert.ChangeType(val, typeof(T));
+        }
 
     }
 

@@ -8,12 +8,17 @@
     <StartupObject>ExpandScada.App</StartupObject>
     <AssemblyVersion>0.0.1.0</AssemblyVersion>
     <FileVersion>0.0.1</FileVersion>
+    <BaseOutputPath>..\..\</BaseOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="7.0.1" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
