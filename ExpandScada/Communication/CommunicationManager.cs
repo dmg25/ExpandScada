@@ -12,13 +12,13 @@ namespace ExpandScada.Communication
     /// </summary>
     public class CommunicationManager
     {
-        public static List<CommunicationProtocol> communicationProtocols = new List<CommunicationProtocol>();
+        public static Dictionary<int, CommunicationProtocol> communicationProtocols = new Dictionary<int, CommunicationProtocol>();
 
         public static void RunAllCommunication()
         {
             foreach (var protocol in communicationProtocols)
             {
-                protocol.StartCommunication();
+                protocol.Value.StartCommunication();
             }
         }
 
@@ -26,7 +26,7 @@ namespace ExpandScada.Communication
         {
             foreach (var protocol in communicationProtocols)
             {
-                protocol.StopCommunication();
+                protocol.Value.StopCommunication();
             }
         }
 
@@ -34,7 +34,7 @@ namespace ExpandScada.Communication
         {
             foreach (var protocol in communicationProtocols)
             {
-                protocol.FinishAndDisposeCommunication();
+                protocol.Value.FinishAndDisposeCommunication();
             }
         }
     }

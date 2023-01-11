@@ -34,8 +34,11 @@ namespace Common.Communication
     * */
     public abstract class CommunicationProtocol
     {
-        public virtual string Name { get; set; }
+        public string ChannelName { get; set; }
 
+
+        public virtual string Name { get; set; }
+        
         /// <summary>
         /// First initialization, parse settings and check them. Check equipment and possibility for starting
         /// </summary>
