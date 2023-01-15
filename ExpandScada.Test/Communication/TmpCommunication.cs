@@ -23,8 +23,8 @@ namespace ExpandScada.Test.Communication
         [Test]
         public void TmpCommunicationTest()
         {
-            SignalLoader.LoadAllSignals("..\\..\\Project\\test1.db");
-            CommunicationLoader.LoadAllProtocols("..\\..\\Protocols\\Debug\\net6.0-windows", "..\\..\\Project\\test1.db");
+            SignalLoader.LoadAllSignals("..\\Project\\test1.db");
+            CommunicationLoader.LoadAllProtocols("..\\Protocols\\Debug", "..\\Project\\test1.db");
             var name = CommunicationManager.communicationProtocols[0].Name;
             var modbusTcp = CommunicationManager.communicationProtocols[0];
 
