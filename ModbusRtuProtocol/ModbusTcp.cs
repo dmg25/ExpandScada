@@ -23,9 +23,9 @@ namespace ModbusProtocol
         public override void InitializeProtocol(List<(Signal signal, string settings)> signals, string protocolSettingsString)
         {
             var protocolSettings = ParseSettingStringToValues(GetProtocolSettings(), protocolSettingsString);
-            modbusClient = new ModbusClient((string)protocolSettings["IP address"], (int)protocolSettings["Port"]);
+            modbusClient = new ModbusClient((string)protocolSettings["IP address"], Convert.ToInt32(protocolSettings["Port"]));
 
-            pollingInterval = (int)protocolSettings["Polling interval"];
+            pollingInterval = Convert.ToInt32(protocolSettings["Polling interval"]);
 
             pollingThread = new Thread(Polling);
 
