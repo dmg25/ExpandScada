@@ -22,12 +22,18 @@ namespace ModbusProtocol
         /// <param name="protocolSettings"></param>
         public override void InitializeProtocol(List<(Signal signal, string settings)> signals, string protocolSettingsString)
         {
+            // Set up the channel
             var protocolSettings = ParseSettingStringToValues(GetProtocolSettings(), protocolSettingsString);
             modbusClient = new ModbusClient((string)protocolSettings["IP address"], Convert.ToInt32(protocolSettings["Port"]));
 
             pollingInterval = Convert.ToInt32(protocolSettings["Polling interval"]);
-
             pollingThread = new Thread(Polling);
+
+            //Set up slaves/queries
+            FindAllSlavesAndSetupThem(signals);
+
+
+
 
 
 
@@ -43,6 +49,12 @@ namespace ModbusProtocol
             {
                 pollingThread.Resume();
             }
+
+            if (!modbusClient.Connected)
+            {
+                modbusClient.Connect();
+            }
+
             pollingThread.Start();
         }
 
@@ -142,10 +154,18 @@ namespace ModbusProtocol
                 //    new string[] {"0123","2301"},
                 //    "Byte order",
                 //    "Byte order for reading/writing values which takes 2 and more registres"),
-                new SettingsParameter<string[]>(
-                    new string[] {"Input register","Holding register"},
+
+                // TODO array doesn't work, because we can not use it vor validation after that. 
+                //      find out how to create list for combobox for GUI
+                //new SettingsParameter<string[]>(
+                //    new string[] { RegisterType.InputRegister.ToString(), RegisterType.HoldingRegister.ToString()},
+                //    "Type of register",
+                //    "Type of register in Modbus protocol"),
+
+                 new SettingsParameter<byte>(
+                    (byte)RegisterType.HoldingRegister,
                     "Type of register",
-                    "Byte order for reading/writing values which takes 2 and more registres"),
+                    "Type of register in Modbus protocol"),
 
 
             };
@@ -206,6 +226,76 @@ namespace ModbusProtocol
             return result;
         }
 
+        void FindAllSlavesAndSetupThem(List<(Signal signal, string settings)> signals)
+        {
+            // all signals in list in the loop
+            // if in the current signal is slave address, but we have no this slave - create
+            // for each new address
+            //      check if there is group with the same query type, if not - create
+            //      if is - check if the first address is on one more tha ours - add signal to this group in the beginning
+            //      or if there is in the end address which less on one than ours - add ti the end.
+            //      if nothing of this - create new request group
+             
+            // !!! TODO this parameter must be calculated by type of signal/register. int 1; float 2, double 4 ...
+            int numOfRegistersInSignal = 1;
+
+            foreach (var signalPair in signals)
+            {
+                var signalSettings = ParseSettingStringToValues(GetSignalSettings(), signalPair.settings);
+                int slaveIdFromSettings = Convert.ToInt32(signalSettings["Device address"]);
+                var foundSlave = slaves.Find(x => x.slaveId == slaveIdFromSettings);
+                if (foundSlave == null)
+                {
+                    foundSlave = new ModbusSlave() { slaveId = slaveIdFromSettings };
+                    slaves.Add(foundSlave);
+                }
+                RegisterType registerType = (RegisterType)signalSettings["Type of register"];
+                int registerAddress = Convert.ToInt32(signalSettings["Register Address"]);
+
+                // TODO add more types of registers and mske it via swith case
+                if (registerType == RegisterType.InputRegister)
+                {
+                    AttachSignalToRequestGroup(foundSlave.inputRegisters, signalPair.signal, registerAddress, numOfRegistersInSignal);
+                }
+                else
+                {
+                    AttachSignalToRequestGroup(foundSlave.holdingRegisters, signalPair.signal, registerAddress, numOfRegistersInSignal);
+                }
+            }
+        }
+
+
+        void AttachSignalToRequestGroup(List<RequestGroup> requestGroups, Signal signal, int registerAddress, int numOfRegistersInSignal)
+        {
+            var foundGroup = requestGroups.Find(x => x.startAddress == registerAddress + 1);
+            if (foundGroup != null)
+            {
+                foundGroup.startAddress -= numOfRegistersInSignal;
+                foundGroup.registerNum += numOfRegistersInSignal;
+                foundGroup.signalsToRequest.Insert(0, (signal, numOfRegistersInSignal));
+                return;
+            }
+
+            foundGroup = requestGroups.Find(x => x.startAddress + x.registerNum == registerAddress - 1);
+            if (foundGroup != null)
+            {
+                foundGroup.registerNum += numOfRegistersInSignal;
+                foundGroup.signalsToRequest.Add((signal, numOfRegistersInSignal));
+                return;
+            }
+
+            var newGroup = new RequestGroup()
+            {
+                startAddress = registerAddress,
+                registerNum = numOfRegistersInSignal
+            };
+            newGroup.signalsToRequest.Add((signal, numOfRegistersInSignal));
+
+            requestGroups.Add(newGroup);
+        }
+
+        // TODO case if we are lost the connection
+        // TODO case if we are lose responce (timeout). maybe additional logic but for future
         void Polling()
         {
             while (!stopPolling)
@@ -214,13 +304,19 @@ namespace ModbusProtocol
                 {
                     foreach (var group in slave.inputRegisters)
                     {
-                        group.UpdateSignalsAfterRequest(modbusClient.ReadInputRegisters(group.startAddress, group.registerNum));
+                        if (modbusClient.Connected)
+                        {
+                            group.UpdateSignalsAfterRequest(modbusClient.ReadInputRegisters(group.startAddress, group.registerNum));
+                        }
                         Thread.Sleep(pollingInterval);
                     }
 
                     foreach (var group in slave.holdingRegisters)
                     {
-                        group.UpdateSignalsAfterRequest(modbusClient.ReadHoldingRegisters(group.startAddress, group.registerNum));
+                        if (modbusClient.Connected)
+                        {
+                            group.UpdateSignalsAfterRequest(modbusClient.ReadHoldingRegisters(group.startAddress, group.registerNum));
+                        }
                         Thread.Sleep(pollingInterval);
                     }
                 }

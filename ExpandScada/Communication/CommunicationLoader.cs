@@ -52,7 +52,6 @@ namespace ExpandScada.Communication
 
         private static CommunicationProtocol LoadDll(string filePath)
         {
-            object result = null;
             try
             {
                 var dllFile = new FileInfo(filePath);
@@ -61,7 +60,18 @@ namespace ExpandScada.Communication
 
                 var types = DLL.GetExportedTypes();
 
-                result = Activator.CreateInstance(types[0]);
+                foreach (var type in types)
+                {
+                    // TODO why it doesn't work???
+                    //if (type is CommunicationProtocol)
+
+                    //if (type.BaseType == "CommunicationProtocol")
+                    if (type.BaseType == typeof(CommunicationProtocol))
+                    {
+                        return Activator.CreateInstance(type) as CommunicationProtocol;
+                    }
+                }
+                return null;
             }
             catch
             {
@@ -69,9 +79,6 @@ namespace ExpandScada.Communication
                 return null;
             }
             
-
-            return result as CommunicationProtocol;
-
         }
 
         public static void CheckAndRegisterProtocol(CommunicationProtocol protocol, string dbPath, string protocolDllPath)

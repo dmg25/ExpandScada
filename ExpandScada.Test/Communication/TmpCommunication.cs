@@ -21,16 +21,10 @@ namespace ExpandScada.Test.Communication
 
         }
 
+        // !!!Start Modbus Slave on licalhost before!!!
         [Test]
         public void TmpCommunicationTest()
         {
-            // TODO #########################################################################################
-            // - Cut dependency to nuget from this project, try make it like this
-            // - maybe make protocol more ready, because did not find there using of signals dictionary...
-            // - set modbus slave on the localhost and make it working
-            // ##############################################################################################
-
-
             SignalLoader.LoadAllSignals("..\\Project\\test1.db");
             CommunicationLoader.LoadAllProtocols("..\\Protocols\\Debug", "..\\Project\\test1.db");
             var name = CommunicationManager.communicationProtocols[1].Name;

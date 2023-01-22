@@ -14,6 +14,7 @@ namespace ModbusProtocol
     // polling will be splitted on this arrays
     internal class ModbusSlave
     {
+        internal int slaveId;
         internal List<RequestGroup> holdingRegisters = new List<RequestGroup>();
         internal List<RequestGroup> inputRegisters = new List<RequestGroup>();
     }
