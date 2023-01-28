@@ -34,6 +34,8 @@ namespace Common.Communication
     * */
     public abstract class CommunicationProtocol
     {
+        public static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         public string ChannelName { get; set; }
 
 

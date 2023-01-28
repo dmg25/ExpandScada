@@ -30,7 +30,17 @@ namespace ExpandScada.Test.Communication
             var name = CommunicationManager.communicationProtocols[1].Name;
             var modbusTcp = CommunicationManager.communicationProtocols[1];
 
+
+            //modbusTcp.Logger.Info("tetetetst");
+            //modbusTcp.Logger.Trace("tetetetst");
+            //modbusTcp.Logger.Debug("tetetetst");
+            //modbusTcp.Logger.Error("tetetetst");
+
+
             modbusTcp.StartCommunication();
+
+            
+
 
             Thread.Sleep(5000);
 

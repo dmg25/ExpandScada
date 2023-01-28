@@ -13,5 +13,15 @@ namespace ExpandScada
     /// </summary>
     public partial class App : Application
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
+        protected override void OnStartup(StartupEventArgs e)
+        {
+
+
+
+
+
+        }
     }
 }

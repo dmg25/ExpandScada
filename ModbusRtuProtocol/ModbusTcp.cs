@@ -32,8 +32,8 @@ namespace ModbusProtocol
             //Set up slaves/queries
             FindAllSlavesAndSetupThem(signals);
 
-
-
+            Logger.Info("Communication channel {0} on IP:{1}:{2} is initialized",
+                ChannelName, (string)protocolSettings["IP address"], protocolSettings["Port"].ToString());
 
 
 
@@ -56,6 +56,7 @@ namespace ModbusProtocol
             }
 
             pollingThread.Start();
+            Logger.Info("Communication channel {0} is started", ChannelName);
         }
 
         /// <summary>
@@ -64,6 +65,8 @@ namespace ModbusProtocol
         public override void StopCommunication()
         {
             pollingThread.Interrupt();
+            Logger.Info("Communication channel {0} is stopped", ChannelName);
+
         }
 
         /// <summary>

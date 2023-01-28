@@ -9,4 +9,8 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="NLog" Version="5.1.1" />
+  </ItemGroup>
+
 </Project>
