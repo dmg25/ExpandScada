@@ -15,15 +15,29 @@ namespace ExpandScada
     /// </summary>
     public partial class App : Application
     {
+        const string FOLDER_WITH_SCREENS = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ChangedManually";
+        const string RESOURCES_FILE_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ResourceStyle\CommonStyle.xaml";
+
+
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            // Load common style for screens
+            // Relative URI
+            //Uri relativeUri = new Uri("/File.xaml",  UriKind.Relative); //AFTER CREATION OF SPECIAL FOLDER USE THIS
+            Uri relativeUri = new Uri(RESOURCES_FILE_PATH);
+            Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary() { Source = relativeUri });
+            //---------------------------------------------------------------------------------------------------------
+            // We can use more flexible resources loading, but define all cases to make right loader first
+            //---------------------------------------------------------------------------------------------------------
+
+            // Load screens
             Logger.Info("Starting up...");
             try
             {
                 Logger.Info("Loading of screens");
-                GuiLoader.FindAndLoadScreens(@"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ChangedManually");
+                GuiLoader.FindAndLoadScreens(FOLDER_WITH_SCREENS);
             }
             catch (Exception ex)
             {
