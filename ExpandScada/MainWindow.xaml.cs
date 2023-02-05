@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using ExpandScada.GUI;
 
 namespace ExpandScada
 {
@@ -23,6 +24,17 @@ namespace ExpandScada
         public MainWindow()
         {
             InitializeComponent();
+
+            // Add loaded screens here (only one for tests)
+            rootOfRoots.Children.Add(GuiLoader.screens.ElementAt(0).Value);
+            //layoutGrid.SetColumn(rootElement, COLUMN);
+            //layoutGrid.SetRow(rootElement, ROW);
+
+
+
+
+
+
         }
     }
 }

@@ -7,9 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExpandScada", "ExpandScada\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExpandScada.Test", "ExpandScada.Test\ExpandScada.Test.csproj", "{1798EDC5-78F0-4FEA-AF49-F40D3BD0BDE8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{214E8EC9-521B-4423-BBF3-A2A47528A56E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{214E8EC9-521B-4423-BBF3-A2A47528A56E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModbusProtocol", "ModbusRtuProtocol\ModbusProtocol.csproj", "{47F0C28B-9A03-4B4F-A921-DC7244A6F893}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ModbusProtocol", "ModbusRtuProtocol\ModbusProtocol.csproj", "{47F0C28B-9A03-4B4F-A921-DC7244A6F893}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
