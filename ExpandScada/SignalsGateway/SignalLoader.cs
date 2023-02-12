@@ -52,6 +52,7 @@ namespace ExpandScada.SignalsGateway
                 tmpSignal.id = id;
                 tmpSignal.name = name;
                 SignalStorage.allSignals.TryAdd(id, tmpSignal);
+                SignalStorage.allNamedSignals.TryAdd(name, tmpSignal);
             }
 
 

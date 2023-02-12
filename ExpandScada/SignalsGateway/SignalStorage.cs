@@ -11,5 +11,6 @@ namespace ExpandScada.SignalsGateway
     public class SignalStorage
     {
         public static ConcurrentDictionary<int, Signal> allSignals = new ConcurrentDictionary<int, Signal>();
+        public static ConcurrentDictionary<string, Signal> allNamedSignals = new ConcurrentDictionary<string, Signal>();
     }
 }

@@ -22,6 +22,7 @@ namespace ExpandScada.Test.Communication
         }
 
         // !!!Start Modbus Slave on licalhost before!!!
+        // Function 4, address 1, int
         [Test]
         public void TmpCommunicationTest()
         {

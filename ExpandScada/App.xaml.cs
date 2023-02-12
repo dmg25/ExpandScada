@@ -6,7 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using ExpandScada.GUI;
-
+using ExpandScada.SignalsGateway;
+using ExpandScada.Communication;
 
 namespace ExpandScada
 {
@@ -17,12 +18,33 @@ namespace ExpandScada
     {
         const string FOLDER_WITH_SCREENS = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ChangedManually";
         const string RESOURCES_FILE_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ResourceStyle\CommonStyle.xaml";
+        //const string PROJECT_DB_PATH = "..\\..\\Project\\test1.db"; // TODO doesn't work, why????
+        const string PROJECT_DB_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Project\test1.db";
 
+        const string PROTOCOLS_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Protocols\Debug";
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            base.OnStartup(e);
+
+            // Load all signals
+            SignalLoader.LoadAllSignals(PROJECT_DB_PATH);
+
+
+            //!!! TEST ONLY!!
+            //SignalStorage.allNamedSignals["MaxValueCounter"].Value = 150;
+
+
+            // Start communication
+            //!!! TESTS YET!!!
+            CommunicationLoader.LoadAllProtocols(PROTOCOLS_PATH, PROJECT_DB_PATH);
+            var modbusTcp = CommunicationManager.communicationProtocols[1];
+            modbusTcp.StartCommunication();
+
+
+
             // Load common style for screens
             // Relative URI
             //Uri relativeUri = new Uri("/File.xaml",  UriKind.Relative); //AFTER CREATION OF SPECIAL FOLDER USE THIS
@@ -43,6 +65,7 @@ namespace ExpandScada
             {
                 Logger.Error($"Critical error, will be shut down: {ex.Message}");
                 Application.Current.Shutdown(); // doesn't wock, be more redical
+                return;
             }
         }
     }

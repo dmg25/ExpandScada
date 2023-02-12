@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Xml;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Controls;
 using System.Windows.Markup;
+using System.Reflection;
+using ExpandScada.SignalsGateway;
 
 namespace ExpandScada.GUI
 {
@@ -33,14 +36,14 @@ namespace ExpandScada.GUI
 
             foreach (var file in files)
             {
-                var foundScreen = LoadUiElement(file);
+                var foundScreen = LoadRootUiElement(file);
                 screens.Add(Path.GetFileNameWithoutExtension(file), foundScreen);
             }
 
 
         }
 
-        static UIElement LoadUiElement(string filePath)
+        static UIElement LoadRootUiElement(string filePath)
         {
             UIElement rootElement;
 
@@ -96,15 +99,125 @@ namespace ExpandScada.GUI
             List<string> specialBlockLines = new List<string>();
             for (int i = endOfUserElementIndex + 1; i < lines.Length; i++)
             {
-                specialBlockLines.Add(lines[i]);
+                specialBlockLines.Add($"{lines[i]}\n");
             }
 
-
+            try
+            {
+                LoadAllBindingsForScreen(specialBlockLines, rootElement);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: {ex.Message}");
+            }
 
             return rootElement;
         }
 
+        // TODO add normal log messages when exceptions
+        static void LoadAllBindingsForScreen(List<string> specialBlockLines, UIElement rootElement)
+        {
+            // - Parse text like XML document
+            // - Run in the cycle all Binding nodes
+            //      - check if there is such a UI element with this name
+            //      - Somehow check if this element has property with this name 
+            //      - create binding and attach to the property via reflection(?) check this
+
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(string.Join(string.Empty, specialBlockLines));
+            XmlNodeList bindingNodes = doc.GetElementsByTagName("Binding");
+
+            string uiName = string.Empty;
+            string propertyName = string.Empty;
+            string signalName = string.Empty;
+            Type uiType = null;
+            foreach (XmlNode node in bindingNodes)
+            {
+                uiName = node.Attributes["UiName"].Value;
+                propertyName = node.Attributes["PropertyName"].Value;
+                signalName = node.Attributes["SignalName"].Value;
+
+                if (uiName.Length == 0 || propertyName.Length == 0 || signalName.Length == 0 )
+                {
+                    throw new ArgumentException($"Error in Binding node: {node.OuterXml}");
+                }
+
+                UIElement bindedElement = (UIElement)LogicalTreeHelper.FindLogicalNode(rootElement, uiName);
+
+                if (bindedElement == null)
+                {
+                    // TODO add screen's name somehow
+                    throw new Exception($"UI element with name \"{uiName}\" isn't exist in the screen");
+                }
+
+                // Searching for dependency property
+                uiType = bindedElement.GetType();
+                var field = FindFieldInClassOrBases(uiType, propertyName);
+
+                if (field == null)
+                {
+                    throw new Exception($"Property \"{propertyName}\" isn't exist in the element \"{uiName}\"");
+                }
+
+                if (!SignalStorage.allNamedSignals.ContainsKey(signalName))
+                {
+                    throw new Exception($"Signal \"{signalName}\" isn't exist in the signal storage");
+                }
+
+                // Install the binding
+                //Binding myBinding = new Binding("Value");
+                //myBinding.Source = SignalStorage.allNamedSignals[signalName];
+                //DependencyProperty dp = (DependencyProperty)field.GetValue(bindedElement);
+                //BindingOperations.SetBinding(bindedElement, dp, myBinding);
 
 
+                Binding myBinding = new Binding("TypedValue");
+                myBinding.Source = SignalStorage.allNamedSignals[signalName];
+                DependencyProperty dp = (DependencyProperty)field.GetValue(bindedElement);
+                BindingOperations.SetBinding(bindedElement, dp, myBinding);
+
+
+                //Type abstr = SignalStorage.allNamedSignals[signalName].GetType();
+
+
+            }
+
+
+
+
+        }
+
+        static FieldInfo FindFieldInClassOrBases(Type classType, string fieldName)
+        {
+            bool found = false;
+            Type currentType = classType;
+            FieldInfo field = null;
+            do
+            {
+                field = currentType.GetField(fieldName);
+                if (field != null)
+                {
+                    break;
+                }
+                else
+                {
+                    currentType = currentType.BaseType;
+                }
+            } while (currentType != null);
+
+            return field;
+        }
+
+
+
+
+
+
+
+
+
+
+
+      
     }
 }

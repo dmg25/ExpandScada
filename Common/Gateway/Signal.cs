@@ -95,6 +95,25 @@ namespace Common.Gateway
             }
         }
 
+        // Test for a while 
+        public T TypedValue
+        {
+            get
+            {
+                return this._value;
+            }
+            set
+            {
+                if (checkEquality && !EqualityComparer<T>.Default.Equals(_value, value))
+                {
+                    OnPropertyChangedNotEqual();
+                }
+
+                this._value = value;
+                this.OnPropertyChanged();
+            }
+        }
+
 
         public Signal()
         {

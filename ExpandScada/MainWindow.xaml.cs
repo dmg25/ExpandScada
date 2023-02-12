@@ -13,6 +13,10 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using ExpandScada.GUI;
+using Common.Gateway;
+using ExpandScada.SignalsGateway;
+using System.Collections.Concurrent;
+
 
 namespace ExpandScada
 {
@@ -21,20 +25,18 @@ namespace ExpandScada
     /// </summary>
     public partial class MainWindow : Window
     {
+       // public ConcurrentDictionary<string, Signal> AllNamedSignals = SignalStorage.allNamedSignals;
+
         public MainWindow()
         {
             InitializeComponent();
+
+           // DataContext = this;
 
             // Add loaded screens here (only one for tests)
             rootOfRoots.Children.Add(GuiLoader.screens.ElementAt(0).Value);
             //layoutGrid.SetColumn(rootElement, COLUMN);
             //layoutGrid.SetRow(rootElement, ROW);
-
-
-
-
-
-
         }
     }
 }
