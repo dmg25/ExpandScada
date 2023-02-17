@@ -55,8 +55,8 @@ namespace ExpandScada.Communication
             try
             {
                 var dllFile = new FileInfo(filePath);
-                var DLL = Assembly.LoadFile(dllFile.FullName);
-                //var DLL = Assembly.LoadFrom(dllFile.FullName);
+                //var DLL = Assembly.LoadFile(dllFile.FullName);
+                var DLL = Assembly.LoadFrom(dllFile.FullName);
 
                 var types = DLL.GetExportedTypes();
 

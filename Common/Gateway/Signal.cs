@@ -90,7 +90,7 @@ namespace Common.Gateway
                     OnPropertyChangedNotEqual();
                 }
 
-                this._value = (T)value;
+                TypedValue = (T)value; // TESTS ONLY
                 this.OnPropertyChanged();
             }
         }
