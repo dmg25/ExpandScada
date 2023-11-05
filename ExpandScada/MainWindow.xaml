@@ -5,8 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ExpandScada"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid x:Name="rootOfRoots">
+        Title="MainWindow" Height="450" Width="800" Closing="Window_Closing">
+    <Grid x:Name="tmpRoot">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Button Content="testtt" Grid.Row="0" Click="Button_Click"/>
+        <Grid x:Name="rootOfRoots" Grid.Row="1">
 
+        </Grid>
     </Grid>
+    
 </Window>

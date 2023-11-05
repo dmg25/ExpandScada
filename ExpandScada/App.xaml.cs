@@ -39,6 +39,7 @@ namespace ExpandScada
 
             // Start communication
             //!!! TESTS YET!!!
+            
             CommunicationLoader.LoadAllProtocols(PROTOCOLS_PATH, PROJECT_DB_PATH);
             var modbusTcp = CommunicationManager.communicationProtocols[1];
             modbusTcp.StartCommunication();
@@ -64,7 +65,7 @@ namespace ExpandScada
             catch (Exception ex)
             {
                 Logger.Error($"Critical error, will be shut down: {ex.Message}");
-                Application.Current.Shutdown(); // doesn't wock, be more redical
+                Application.Current.Shutdown(); // TODO doesn't wock, be more redical
                 return;
             }
         }

@@ -31,12 +31,25 @@ namespace ExpandScada
         {
             InitializeComponent();
 
-           // DataContext = this;
+            //##########################################################################
+            // TRY TO CREATE SOME CONDITION FOR CHANGING UIElement here. 
+            //##########################################################################
+
 
             // Add loaded screens here (only one for tests)
             rootOfRoots.Children.Add(GuiLoader.screens.ElementAt(0).Value);
-            //layoutGrid.SetColumn(rootElement, COLUMN);
-            //layoutGrid.SetRow(rootElement, ROW);
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            //rootOfRoots.Children.Add(GuiLoader.screens.ElementAt(1).Value);
+            //System.Threading.Thread.Sleep(5000);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            rootOfRoots.Children.Clear();
+            rootOfRoots.Children.Add(GuiLoader.screens.ElementAt(1).Value);
         }
     }
 }

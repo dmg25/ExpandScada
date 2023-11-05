@@ -39,8 +39,6 @@ namespace ExpandScada.GUI
                 var foundScreen = LoadRootUiElement(file);
                 screens.Add(Path.GetFileNameWithoutExtension(file), foundScreen);
             }
-
-
         }
 
         static UIElement LoadRootUiElement(string filePath)
@@ -76,8 +74,7 @@ namespace ExpandScada.GUI
 
             if (endOfUserElementIndex == -1)
             {
-                // TODO exception ?
-                return null;
+                throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: End of UserControl not found. Wrong file structure.");
             }
 
             // Remove x:Class property
@@ -165,12 +162,6 @@ namespace ExpandScada.GUI
                 }
 
                 // Install the binding
-                //Binding myBinding = new Binding("Value");
-                //myBinding.Source = SignalStorage.allNamedSignals[signalName];
-                //DependencyProperty dp = (DependencyProperty)field.GetValue(bindedElement);
-                //BindingOperations.SetBinding(bindedElement, dp, myBinding);
-
-
                 Binding myBinding = new Binding("TypedValue");
                 myBinding.Source = SignalStorage.allNamedSignals[signalName];
                 DependencyProperty dp = (DependencyProperty)field.GetValue(bindedElement);
