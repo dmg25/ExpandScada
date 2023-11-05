@@ -41,6 +41,76 @@ namespace ExpandScada.GUI
             }
         }
 
+        //static UIElement LoadRootUiElement(string filePath)
+        //{
+        //    UIElement rootElement;
+
+        //    // Clean method, but file must be without x:Class definition and without any trash inside
+        //    //---------------------------------------------------------------------------------------
+        //    //using FileStream s = new FileStream(filePath, FileMode.Open);
+        //    //rootElement = (UIElement)XamlReader.Load(s);
+        //    //s.Close();
+        //    //---------------------------------------------------------------------------------------
+
+        //    // We can not use XAML reader, because there will be problem with x:Class and it is not worling with any additional blocks inside
+        //    // We can not use XML also, because there is more then one root element, and it is at least...
+
+        //    // So let's work with file as string and remove x:Class manually and find special block
+        //    string wholeFile = File.ReadAllText(filePath);
+        //    string[] lines = wholeFile.Split("\n");
+
+        //    // Find UserControl block
+        //    // We know, that before UserControl there is nothing. Special block is ONLY after this block
+        //    List<string> userControlLines = new List<string>();
+        //    int endOfUserElementIndex = -1;
+        //    for (int i = 0; i < lines.Length; i++)
+        //    {
+        //        if (lines[i].Contains("</UserControl>"))
+        //        {
+        //            endOfUserElementIndex = i;
+        //            break;
+        //        }
+        //    }
+
+        //    if (endOfUserElementIndex == -1)
+        //    {
+        //        throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: End of UserControl not found. Wrong file structure.");
+        //    }
+
+        //    // Remove x:Class property
+        //    // TODO now it is can be only in first line, maybe will be problems if it will be gone to another line
+        //    if (lines[0].Contains("x:Class"))
+        //    {
+        //        lines[0] = "<UserControl \r";
+        //    }
+
+        //    for (int i = 0; i < endOfUserElementIndex + 1; i++)
+        //    {
+        //        userControlLines.Add($"{lines[i]}\n");
+        //    }
+
+        //    string userControlString = string.Join(String.Empty, userControlLines);
+        //    rootElement = (UIElement)XamlReader.Parse(userControlString);
+
+        //    // Now we can get our additional block for parsing
+        //    List<string> specialBlockLines = new List<string>();
+        //    for (int i = endOfUserElementIndex + 1; i < lines.Length; i++)
+        //    {
+        //        specialBlockLines.Add($"{lines[i]}\n");
+        //    }
+
+        //    try
+        //    {
+        //        LoadAllBindingsForScreen(specialBlockLines, rootElement);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: {ex.Message}");
+        //    }
+
+        //    return rootElement;
+        //}
+
         static UIElement LoadRootUiElement(string filePath)
         {
             UIElement rootElement;
@@ -52,56 +122,67 @@ namespace ExpandScada.GUI
             //s.Close();
             //---------------------------------------------------------------------------------------
 
-            // We can not use XAML reader, because there will be problem with x:Class and it is not worling with any additional blocks inside
-            // We can not use XML also, because there is more then one root element, and it is at least...
 
-            // So let's work with file as string and remove x:Class manually and find special block
+            // take special section and cut it out
+
+            // go from the bottom to top and take all lines until <EditorBlockForConnections> not found
+            // since found - take it too and stop - cut all bottom lines
+
             string wholeFile = File.ReadAllText(filePath);
             string[] lines = wholeFile.Split("\n");
 
-            // Find UserControl block
-            // We know, that before UserControl there is nothing. Special block is ONLY after this block
-            List<string> userControlLines = new List<string>();
-            int endOfUserElementIndex = -1;
-            for (int i = 0; i < lines.Length; i++)
+            // remove all empty strings
+            List<string> allLinesCleaned = new List<string>();
+            foreach (var line in lines)
             {
-                if (lines[i].Contains("</UserControl>"))
+                if (!string.IsNullOrWhiteSpace(line))
                 {
-                    endOfUserElementIndex = i;
+                    allLinesCleaned.Add(line.TrimEnd('\r'));
+                }
+            }
+                                                                               
+            if (allLinesCleaned[allLinesCleaned.Count - 1] != "</EditorBlockForConnections>")
+            {
+                throw new InvalidOperationException($"Special section in screen file {filePath} not found");
+            }
+
+            bool startOfSpecialSectionFound = false;
+            int lineOfStartOfSpecialSection = 0;
+            List<string> specialSectionLines = new List<string>();
+            for (int i = allLinesCleaned.Count - 1; i > 0; i--)
+            {
+                if (allLinesCleaned[i] != "<EditorBlockForConnections>")
+                {
+                    specialSectionLines.Insert(0, $"{allLinesCleaned[i]}\n");
+                }
+                else
+                {
+                    startOfSpecialSectionFound = true;
+                    specialSectionLines.Insert(0, $"{allLinesCleaned[i]}\n");
+                    lineOfStartOfSpecialSection = i;
                     break;
                 }
             }
 
-            if (endOfUserElementIndex == -1)
+            if (!startOfSpecialSectionFound)
             {
-                throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: End of UserControl not found. Wrong file structure.");
+                throw new InvalidOperationException($"Beginning of special section in screen file {filePath} not found");
             }
 
-            // Remove x:Class property
-            // TODO now it is can be only in first line, maybe will be problems if it will be gone to another line
-            if (lines[0].Contains("x:Class"))
+            List<string> rootElementLines = new List<string>();
+            for (int i = 0; i < lineOfStartOfSpecialSection; i++)
             {
-                lines[0] = "<UserControl \r";
+                rootElementLines.Add($"{allLinesCleaned[i]}\n");
             }
 
-            for (int i = 0; i < endOfUserElementIndex + 1; i++)
-            {
-                userControlLines.Add($"{lines[i]}\n");
-            }
+            // get root element 
+            string rootElementString = string.Join(String.Empty, rootElementLines);
+            rootElement = (UIElement)XamlReader.Parse(rootElementString);
 
-            string userControlString = string.Join(String.Empty, userControlLines);
-            rootElement = (UIElement)XamlReader.Parse(userControlString);
-
-            // Now we can get our additional block for parsing
-            List<string> specialBlockLines = new List<string>();
-            for (int i = endOfUserElementIndex + 1; i < lines.Length; i++)
-            {
-                specialBlockLines.Add($"{lines[i]}\n");
-            }
 
             try
             {
-                LoadAllBindingsForScreen(specialBlockLines, rootElement);
+                LoadAllBindingsForScreen(specialSectionLines, rootElement);
             }
             catch (Exception ex)
             {
@@ -109,6 +190,77 @@ namespace ExpandScada.GUI
             }
 
             return rootElement;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //string wholeFile = File.ReadAllText(filePath);
+            //string[] lines = wholeFile.Split("\n");
+
+            //// Find UserControl block
+            //// We know, that before UserControl there is nothing. Special block is ONLY after this block
+            //List<string> userControlLines = new List<string>();
+            //int endOfUserElementIndex = -1;
+            //for (int i = 0; i < lines.Length; i++)
+            //{
+            //    if (lines[i].Contains("</UserControl>"))
+            //    {
+            //        endOfUserElementIndex = i;
+            //        break;
+            //    }
+            //}
+
+            //if (endOfUserElementIndex == -1)
+            //{
+            //    throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: End of UserControl not found. Wrong file structure.");
+            //}
+
+            //// Remove x:Class property
+            //// TODO now it is can be only in first line, maybe will be problems if it will be gone to another line
+            //if (lines[0].Contains("x:Class"))
+            //{
+            //    lines[0] = "<UserControl \r";
+            //}
+
+            //for (int i = 0; i < endOfUserElementIndex + 1; i++)
+            //{
+            //    userControlLines.Add($"{lines[i]}\n");
+            //}
+
+            //string userControlString = string.Join(String.Empty, userControlLines);
+            //rootElement = (UIElement)XamlReader.Parse(userControlString);
+
+            //// Now we can get our additional block for parsing
+            //List<string> specialBlockLines = new List<string>();
+            //for (int i = endOfUserElementIndex + 1; i < lines.Length; i++)
+            //{
+            //    specialBlockLines.Add($"{lines[i]}\n");
+            //}
+
+            //try
+            //{
+            //    LoadAllBindingsForScreen(specialBlockLines, rootElement);
+            //}
+            //catch (Exception ex)
+            //{
+            //    throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: {ex.Message}");
+            //}
+
+            //return rootElement;
         }
 
         // TODO add normal log messages when exceptions

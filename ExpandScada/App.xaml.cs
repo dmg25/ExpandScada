@@ -16,7 +16,8 @@ namespace ExpandScada
     /// </summary>
     public partial class App : Application
     {
-        const string FOLDER_WITH_SCREENS = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ChangedManually";
+        //const string FOLDER_WITH_SCREENS = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ChangedManually";
+        const string FOLDER_WITH_SCREENS = @"C:\Users\admin\Desktop\SCADA\Sources\Project\Screens";
         const string RESOURCES_FILE_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ResourceStyle\CommonStyle.xaml";
         //const string PROJECT_DB_PATH = "..\\..\\Project\\test1.db"; // TODO doesn't work, why????
         const string PROJECT_DB_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Project\test1.db";
@@ -40,9 +41,9 @@ namespace ExpandScada
             // Start communication
             //!!! TESTS YET!!!
             
-            CommunicationLoader.LoadAllProtocols(PROTOCOLS_PATH, PROJECT_DB_PATH);
-            var modbusTcp = CommunicationManager.communicationProtocols[1];
-            modbusTcp.StartCommunication();
+            //CommunicationLoader.LoadAllProtocols(PROTOCOLS_PATH, PROJECT_DB_PATH);
+            //var modbusTcp = CommunicationManager.communicationProtocols[1];
+            //modbusTcp.StartCommunication();
 
 
 
