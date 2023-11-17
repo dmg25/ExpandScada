@@ -300,25 +300,40 @@ namespace ExpandScada.GUI
                 }
 
                 // Searching for dependency property
-                uiType = bindedElement.GetType();
-                var field = FindFieldInClassOrBases(uiType, propertyName);
-
-                if (field == null)
+                // Since we have some special properties which cannot be found in element - create special cases for them
+                DependencyProperty dp = null;
+                switch (propertyName)
                 {
-                    throw new Exception($"Property \"{propertyName}\" isn't exist in the element \"{uiName}\"");
-                }
+                    case "Canvas.Top":
+                        dp = Canvas.TopProperty;
+                        break;
+                    case "Canvas.Left":
+                        dp = Canvas.LeftProperty;
+                        break;
+                    default:
+                        uiType = bindedElement.GetType();
+                        var field = FindFieldInClassOrBases(uiType, propertyName);
 
-                if (!SignalStorage.allNamedSignals.ContainsKey(signalName))
-                {
-                    throw new Exception($"Signal \"{signalName}\" isn't exist in the signal storage");
+                        if (field == null)
+                        {
+                            throw new Exception($"Property \"{propertyName}\" isn't exist in the element \"{uiName}\"");
+                        }
+
+                        if (!SignalStorage.allNamedSignals.ContainsKey(signalName))
+                        {
+                            throw new Exception($"Signal \"{signalName}\" isn't exist in the signal storage");
+                        }
+
+                        dp = (DependencyProperty)field.GetValue(bindedElement);
+                        break;
                 }
 
                 // Install the binding
                 Binding myBinding = new Binding("TypedValue");
                 myBinding.Source = SignalStorage.allNamedSignals[signalName];
-                DependencyProperty dp = (DependencyProperty)field.GetValue(bindedElement);
                 BindingOperations.SetBinding(bindedElement, dp, myBinding);
 
+                
 
                 //Type abstr = SignalStorage.allNamedSignals[signalName].GetType();
 
