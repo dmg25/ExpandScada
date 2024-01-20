@@ -40,10 +40,10 @@ namespace ExpandScada
 
             // Start communication
             //!!! TESTS YET!!!
-            
-            //CommunicationLoader.LoadAllProtocols(PROTOCOLS_PATH, PROJECT_DB_PATH);
-            //var modbusTcp = CommunicationManager.communicationProtocols[1];
-            //modbusTcp.StartCommunication();
+
+            CommunicationLoader.LoadAllProtocols(PROTOCOLS_PATH, PROJECT_DB_PATH);
+            var modbusTcp = CommunicationManager.communicationProtocols[1];
+            modbusTcp.StartCommunication();
 
 
 

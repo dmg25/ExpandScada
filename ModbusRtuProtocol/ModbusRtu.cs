@@ -1,19 +1,25 @@
 ﻿using Common.Communication;
 using Common.Gateway;
-using EasyModbus;
-
+using System;
+using System.Collections.Generic;
+using System.IO.Ports;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ModbusProtocol
 {
-    public class ModbusTcp : CommunicationProtocol
+    public class ModbusRtu : CommunicationProtocol
     {
-        public override string Name { get; set; } = "ModbusTcp";
-        ModbusClient modbusClient;
+
+        public override string Name { get; set; } = "ModbusRtu";
+        //ModbusClient modbusClient;
+        SerialPort comPort;
         Thread pollingThread;
         int pollingInterval;
         bool stopPolling = false;
         List<ModbusSlave> slaves = new List<ModbusSlave>();
-        
+
 
         /// <summary>
         /// First initialization, parse settings and check them. Check equipment and possibility for starting
@@ -24,7 +30,21 @@ namespace ModbusProtocol
         {
             // Set up the channel
             var protocolSettings = ParseSettingStringToValues(GetProtocolSettings(), protocolSettingsString);
-            modbusClient = new ModbusClient((string)protocolSettings["IP address"], Convert.ToInt32(protocolSettings["Port"]));
+
+            comPort = new SerialPort();
+            comPort.PortName = (string)protocolSettings["COM port name"];
+            comPort.BaudRate = (int)protocolSettings["BaudRate"];
+            comPort.DataBits = (int)protocolSettings["DataBits"];
+            Enum.TryParse((string)protocolSettings["Parity"], out Parity parity);
+            comPort.Parity = parity;
+            Enum.TryParse((string)protocolSettings["StopBits"], out StopBits stopBits);
+            comPort.StopBits = stopBits;
+
+            // it's really necessary here?
+            comPort.ReadTimeout = 2000;
+            comPort.WriteTimeout = 2000;
+
+            //modbusClient = new ModbusClient((string)protocolSettings["IP address"], Convert.ToInt32(protocolSettings["Port"]));
 
             pollingInterval = Convert.ToInt32(protocolSettings["Polling interval"]);
             pollingThread = new Thread(Polling);
@@ -32,11 +52,8 @@ namespace ModbusProtocol
             //Set up slaves/queries
             FindAllSlavesAndSetupThem(signals);
 
-            Logger.Info("Communication channel {0} on IP:{1}:{2} is initialized",
-                ChannelName, (string)protocolSettings["IP address"], protocolSettings["Port"].ToString());
-
-
-
+            Logger.Info("Communication channel {0} on port: {1} is initialized",
+                ChannelName, (string)protocolSettings["COM port name"]);
 
         }
 
@@ -52,9 +69,10 @@ namespace ModbusProtocol
                     pollingThread.Resume();
                 }
 
-                if (!modbusClient.Connected)
+                if (!comPort.IsOpen)
                 {
-                    modbusClient.Connect();
+                    comPort.Open();
+                    comPort.DiscardInBuffer();
                 }
 
                 pollingThread.Start();
@@ -65,7 +83,7 @@ namespace ModbusProtocol
                 Logger.Info($"Communication channel {ChannelName} crushed on start. Message: {ex.Message}");
             }
 
-            
+
         }
 
         /// <summary>
@@ -83,7 +101,18 @@ namespace ModbusProtocol
         /// </summary>
         public override void FinishAndDisposeCommunication()
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (comPort.IsOpen)
+                {
+                    comPort.DiscardInBuffer();
+                    comPort.Close();
+                }
+            }
+            catch
+            {
+                // TODO add log
+            }
         }
 
         /// <summary>
@@ -92,36 +121,59 @@ namespace ModbusProtocol
         /// <returns></returns>
         public override List<SettingsParameter> GetProtocolSettings()
         {
-            return new List<SettingsParameter>() 
+            return new List<SettingsParameter>()
             {
                 new SettingsParameter<string>(
-                    "190.201.100.100", 
-                    "IP address", 
-                    "IP address of slave device",
+                    "COM1",
+                    "COM port name",
+                    "Name of COM port in format like COM1",
                     delegate(string val)
                     {
-                        if (CheckIpAddressStructure(val))
+                        if (!val.StartsWith("COM"))
                         {
-                            return "Wrong IP address format";
+                            return "Wrong COM port name format";
                         }
+
                         return String.Empty;
                     }),
-                new SettingsParameter<uint>(
-                    502,
-                    "Port",
-                    "TCP port of slave device"),
+                new SettingsParameter<int>(
+                    115200,
+                    "BaudRate",
+                    "Speed"),
+                new SettingsParameter<int>(
+                    8,
+                    "DataBits",
+                    "Number of Data bits"),
+                new SettingsParameter<string>(
+                    Parity.None.ToString(),
+                    "Parity",
+                    "Write it as a text (None,Odd,Even,Mark,Space)",
+                    delegate(string val)
+                    {
+                        if (!Enum.TryParse(val, out Parity result))
+                        {
+                            return $"Value {val} is not a Parity";
+                        }
+
+                        return String.Empty;
+                    }),
+                new SettingsParameter<string>(
+                    StopBits.One.ToString(),
+                    "StopBits",
+                    "Write it as a text (None,One,Two,OnePointFive)",
+                    delegate(string val)
+                    {
+                        if (!Enum.TryParse(val, out StopBits result))
+                        {
+                            return $"Value {val} is not a StopBit";
+                        }
+
+                        return String.Empty;
+                    }),
                 new SettingsParameter<uint>(
                     50,
                     "Polling interval",
                     "Interval between each requests in ms"),
-                //new SettingsParameter<uint>(
-                //    500,
-                //    "Timeout",
-                //    "Timeout for responce waiting"),
-                //new SettingsParameter<bool>(
-                //    false,
-                //    "Unite requests",
-                //    "Allow to unite different requests to one big request, but with not registered registers between. Be sure, that device can return them"),
 
             };
         }
@@ -162,24 +214,32 @@ namespace ModbusProtocol
                         }
                         return String.Empty;
                     }),
-                //new SettingsParameter<string[]>(
-                //    new string[] {"0123","2301"},
-                //    "Byte order",
-                //    "Byte order for reading/writing values which takes 2 and more registres"),
-
-                // TODO array doesn't work, because we can not use it vor validation after that. 
-                //      find out how to create list for combobox for GUI
-                //new SettingsParameter<string[]>(
-                //    new string[] { RegisterType.InputRegister.ToString(), RegisterType.HoldingRegister.ToString()},
-                //    "Type of register",
-                //    "Type of register in Modbus protocol"),
-
-                 new SettingsParameter<byte>(
-                    (byte)RegisterType.HoldingRegister,
+                 new SettingsParameter<string>(
+                    RegisterType.HoldingRegister.ToString(),
                     "Type of register",
-                    "Type of register in Modbus protocol"),
+                    "Type of register in Modbus protocol (HoldingRegister/InputRegister)",
+                    delegate(string val)
+                    {
+                        if (!Enum.TryParse(val, out RegisterType result))
+                        {
+                            return $"Value {val} is not a RegisterType";
+                        }
 
+                        return String.Empty;
+                    }),
+                 new SettingsParameter<string>(
+                    ModbusDataType.Word.ToString(),
+                    "RegisterDataType",
+                    "Data type (length) of register (Word/Float/Double)",
+                    delegate(string val)
+                    {
+                        if (!Enum.TryParse(val, out ModbusDataType result))
+                        {
+                            return $"Value {val} is not a ModbusDataType";
+                        }
 
+                        return String.Empty;
+                    }),
             };
         }
 
@@ -193,34 +253,6 @@ namespace ModbusProtocol
         }
 
 
-
-
-
-
-
-        bool CheckIpAddressStructure(string ip)
-        {
-            string [] ipNumbersSrt = ip.Split('.');
-            if (ipNumbersSrt.Length != 4)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < ipNumbersSrt.Length; i++)
-            {
-                try
-                {
-                    byte ipElement  = Convert.ToByte(ipNumbersSrt[i]);
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-        
         Dictionary<string, object> ParseSettingStringToValues(List<SettingsParameter> settings, string settingsString)
         {
             Dictionary<string, object> result = new Dictionary<string, object>();
@@ -247,13 +279,16 @@ namespace ModbusProtocol
             //      if is - check if the first address is on one more tha ours - add signal to this group in the beginning
             //      or if there is in the end address which less on one than ours - add ti the end.
             //      if nothing of this - create new request group
-             
+
             // !!! TODO this parameter must be calculated by type of signal/register. int 1; float 2, double 4 ...
-            int numOfRegistersInSignal = 1;
+            //int numOfRegistersInSignal = 1;
 
             foreach (var signalPair in signals)
             {
                 var signalSettings = ParseSettingStringToValues(GetSignalSettings(), signalPair.settings);
+
+                Enum.TryParse((string)signalSettings["RegisterDataType"], out ModbusDataType dataType);
+                int numOfRegistersInSignal = (int)dataType;
                 int slaveIdFromSettings = Convert.ToInt32(signalSettings["Device address"]);
                 var foundSlave = slaves.Find(x => x.slaveId == slaveIdFromSettings);
                 if (foundSlave == null)
@@ -267,24 +302,28 @@ namespace ModbusProtocol
                 // TODO add more types of registers and mske it via swith case
                 if (registerType == RegisterType.InputRegister)
                 {
-                    AttachSignalToRequestGroup(foundSlave.inputRegisters, signalPair.signal, registerAddress, numOfRegistersInSignal);
+                    AttachSignalToRequestGroup(foundSlave.inputRegisters, signalPair.signal, 
+                        registerAddress, dataType, numOfRegistersInSignal);
                 }
                 else
                 {
-                    AttachSignalToRequestGroup(foundSlave.holdingRegisters, signalPair.signal, registerAddress, numOfRegistersInSignal);
+                    AttachSignalToRequestGroup(foundSlave.holdingRegisters, signalPair.signal, 
+                        registerAddress, dataType, numOfRegistersInSignal);
                 }
             }
         }
 
 
-        void AttachSignalToRequestGroup(List<RequestGroup> requestGroups, Signal signal, int registerAddress, int numOfRegistersInSignal)
+        void AttachSignalToRequestGroup(List<RequestGroup> requestGroups,
+            Signal signal, int registerAddress, 
+            ModbusDataType datatype, int numOfRegistersInSignal)
         {
             var foundGroup = requestGroups.Find(x => x.startAddress == registerAddress + 1);
             if (foundGroup != null)
             {
                 foundGroup.startAddress -= numOfRegistersInSignal;
                 foundGroup.registerNum += numOfRegistersInSignal;
-                foundGroup.signalsToRequest.Insert(0, (signal, numOfRegistersInSignal, ModbusDataType.Word));
+                foundGroup.signalsToRequest.Insert(0, (signal, numOfRegistersInSignal, datatype));
                 return;
             }
 
@@ -292,7 +331,7 @@ namespace ModbusProtocol
             if (foundGroup != null)
             {
                 foundGroup.registerNum += numOfRegistersInSignal;
-                foundGroup.signalsToRequest.Add((signal, numOfRegistersInSignal, ModbusDataType.Word));
+                foundGroup.signalsToRequest.Add((signal, numOfRegistersInSignal, datatype));
                 return;
             }
 
@@ -301,7 +340,7 @@ namespace ModbusProtocol
                 startAddress = registerAddress,
                 registerNum = numOfRegistersInSignal
             };
-            newGroup.signalsToRequest.Add((signal, numOfRegistersInSignal, ModbusDataType.Word));
+            newGroup.signalsToRequest.Add((signal, numOfRegistersInSignal, datatype));
 
             requestGroups.Add(newGroup);
         }
@@ -316,18 +355,58 @@ namespace ModbusProtocol
                 {
                     foreach (var group in slave.inputRegisters)
                     {
-                        if (modbusClient.Connected)
+                        if (comPort.IsOpen)
                         {
-                            group.UpdateSignalsAfterRequest(modbusClient.ReadInputRegisters(group.startAddress, group.registerNum));
+                            byte[] resultBuf = new byte[group.registerNum * 2];
+                            int readedBytes = ModbusProtocol.ModbusRtuOld.Modbus.readMultipleInputRegistersFNC4(
+                                comPort,
+                                (byte)slave.slaveId,
+                                (short)group.startAddress,
+                                (short)group.registerNum,
+                                resultBuf,
+                                slave.slaveId.ToString());
+
+                            if (readedBytes == group.registerNum * 2)
+                            {
+                                short[] registersWords = new short[group.registerNum];
+                                for (int i = 0; i < group.registerNum; i++)
+                                {
+                                    //byte b1 = resultBuf[i * 2];
+                                    //byte b2 = resultBuf[i * 2 + 1];
+                                    registersWords[i] = BitConverter.ToInt16(resultBuf, i * 2);
+                                }
+
+                                group.UpdateSignalsAfterRequest(registersWords);
+                            }
                         }
                         Thread.Sleep(pollingInterval);
                     }
 
                     foreach (var group in slave.holdingRegisters)
                     {
-                        if (modbusClient.Connected)
+                        if (comPort.IsOpen)
                         {
-                            group.UpdateSignalsAfterRequest(modbusClient.ReadHoldingRegisters(group.startAddress, group.registerNum));
+                            byte[] resultBuf = new byte[group.registerNum * 2];
+                            int readedBytes = ModbusProtocol.ModbusRtuOld.Modbus.readMultipleRegistersFNC3(
+                                comPort,
+                                (byte)slave.slaveId,
+                                (short)group.startAddress,
+                                (short)group.registerNum,
+                                resultBuf,
+                                slave.slaveId.ToString());
+
+                            if (readedBytes == group.registerNum * 2)
+                            {
+                                short[] registersWords = new short[group.registerNum];
+                                for (int i = 0; i < group.registerNum; i++)
+                                {
+                                    //byte b1 = resultBuf[i * 2];
+                                    //byte b2 = resultBuf[i * 2 + 1];
+                                    registersWords[i] = BitConverter.ToInt16(resultBuf, i * 2);
+                                }
+
+                                group.UpdateSignalsAfterRequest(registersWords);
+                            }
                         }
                         Thread.Sleep(pollingInterval);
                     }

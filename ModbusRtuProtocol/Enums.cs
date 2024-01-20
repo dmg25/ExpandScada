@@ -11,4 +11,11 @@ namespace ModbusProtocol
         InputRegister,
         HoldingRegister
     }
+
+    public enum ModbusDataType : int
+    {
+        Word = 1,
+        Float = 2,
+        Double = 4,
+    }
 }

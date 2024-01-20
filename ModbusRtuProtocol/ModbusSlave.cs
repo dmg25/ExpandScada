@@ -24,7 +24,43 @@ namespace ModbusProtocol
     {
         internal int startAddress;
         internal int registerNum;
-        internal List<(Signal signal, int signalRegistersNum)> signalsToRequest = new List<(Signal signal, int signalRegistersNum)>();
+        internal List<(Signal signal, int signalRegistersNum, ModbusDataType datatype)> signalsToRequest = new List<(Signal signal, int signalRegistersNum, ModbusDataType datatype)>();
+
+        internal void UpdateSignalsAfterRequest(short[] responceResultWords)
+        {
+            int registerCounter = 0;
+            for (int i = 0; i < signalsToRequest.Count;)
+            {
+                // check datatype of each signal and convert 1-2-4 words to this type
+                // move index on 1-2-4 values as well
+
+                // TODO care about signal's datatype, maybe casting problems
+                switch (signalsToRequest[i].datatype)
+                {
+                    case ModbusDataType.Word:
+                        signalsToRequest[i].signal.Value = responceResultWords[i];
+                        i++;
+                        break;
+                    case ModbusDataType.Float:
+                        signalsToRequest[i].signal.Value = ModbusRtuOld.ComPortHelper.getFloat(
+                            responceResultWords, i, ModbusRtuOld.FLOAT_BYTE_ORDER.F1032);
+                        i += 2;
+                        break;
+                    //case ModbusDataType.Double:
+                    //    signalsToRequest[i].signal.Value = responceResultWords[i];
+                    //    break;
+                    default:
+                        signalsToRequest[i].signal.Value = responceResultWords[i];
+                        i++;
+                        break;
+                }
+
+
+            }
+
+
+
+        }
 
         internal void UpdateSignalsAfterRequest(int[] responceResult)
         {
@@ -39,7 +75,6 @@ namespace ModbusProtocol
 
 
         }
-
 
 
     }

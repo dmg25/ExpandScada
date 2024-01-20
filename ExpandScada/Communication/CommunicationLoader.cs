@@ -39,19 +39,24 @@ namespace ExpandScada.Communication
             for (int i = 0; i < files.Length; i++)
             {
                 // TODO this instance exists only for checking, maybe we can simplify it
-                var protocol = LoadDll(files[i]);
-                if (protocol == null)
+                var protocols = LoadDll(files[i]);
+                if (protocols.Count == 0)
                 {
                     continue;
                 }
-                CheckAndRegisterProtocol(protocol, dbPath, files[i]);
+
+                foreach (var protocol in protocols)
+                {
+                    CheckAndRegisterProtocol(protocol, dbPath, files[i]);
+                }
             }
 
 
         }
 
-        private static CommunicationProtocol LoadDll(string filePath)
+        private static List<CommunicationProtocol> LoadDll(string filePath)
         {
+            List<CommunicationProtocol> result = new List<CommunicationProtocol>();
             try
             {
                 var dllFile = new FileInfo(filePath);
@@ -68,15 +73,22 @@ namespace ExpandScada.Communication
                     //if (type.BaseType == "CommunicationProtocol")
                     if (type.BaseType == typeof(CommunicationProtocol))
                     {
-                        return Activator.CreateInstance(type) as CommunicationProtocol;
+                        try
+                        {
+                            result.Add(Activator.CreateInstance(type) as CommunicationProtocol);
+                        }
+                        catch
+                        {
+                            //TODO add message to log
+                        }
                     }
                 }
-                return null;
+                return result;
             }
             catch
             {
                 // TODO add some log or throw new exception
-                return null;
+                return result;
             }
             
         }
@@ -167,10 +179,14 @@ namespace ExpandScada.Communication
                     continue;
                 }
 
-                var newProtocol = LoadDll(protocolDllPath);
-                newProtocol.ChannelName = tmpProtocol.channelName;
-                newProtocol.InitializeProtocol(signals, tmpProtocol.settingsString);
-                CommunicationManager.communicationProtocols.Add(tmpProtocol.id, newProtocol);
+                protocol.ChannelName = tmpProtocol.channelName;
+                protocol.InitializeProtocol(signals, tmpProtocol.settingsString);
+                CommunicationManager.communicationProtocols.Add(tmpProtocol.id, protocol);
+
+                //var newProtocol = LoadDll(protocolDllPath);
+                //newProtocol.ChannelName = tmpProtocol.channelName;
+                //newProtocol.InitializeProtocol(signals, tmpProtocol.settingsString);
+                //CommunicationManager.communicationProtocols.Add(tmpProtocol.id, newProtocol);
             }
 
             sqlite_conn.Close();
