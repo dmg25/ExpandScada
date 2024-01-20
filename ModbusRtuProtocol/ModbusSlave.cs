@@ -34,11 +34,11 @@ namespace ModbusProtocol
                 // check datatype of each signal and convert 1-2-4 words to this type
                 // move index on 1-2-4 values as well
 
-                // TODO care about signal's datatype, maybe casting problems
+                // TODO care about signal's datatype, !WILL BE! casting problems
                 switch (signalsToRequest[i].datatype)
                 {
                     case ModbusDataType.Word:
-                        signalsToRequest[i].signal.Value = responceResultWords[i];
+                        signalsToRequest[i].signal.Value = (int)responceResultWords[i];
                         i++;
                         break;
                     case ModbusDataType.Float:

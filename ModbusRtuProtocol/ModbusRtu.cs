@@ -296,7 +296,8 @@ namespace ModbusProtocol
                     foundSlave = new ModbusSlave() { slaveId = slaveIdFromSettings };
                     slaves.Add(foundSlave);
                 }
-                RegisterType registerType = (RegisterType)signalSettings["Type of register"];
+                Enum.TryParse((string)signalSettings["Type of register"], out RegisterType regType);
+                RegisterType registerType = regType;
                 int registerAddress = Convert.ToInt32(signalSettings["Register Address"]);
 
                 // TODO add more types of registers and mske it via swith case
@@ -373,7 +374,8 @@ namespace ModbusProtocol
                                 {
                                     //byte b1 = resultBuf[i * 2];
                                     //byte b2 = resultBuf[i * 2 + 1];
-                                    registersWords[i] = BitConverter.ToInt16(resultBuf, i * 2);
+                                    registersWords[i] = ModbusRtuOld.ComPortHelper.getWord(resultBuf, i * 2);
+                                    //registersWords[i] = BitConverter.ToInt16(resultBuf, i * 2);
                                 }
 
                                 group.UpdateSignalsAfterRequest(registersWords);
@@ -402,7 +404,8 @@ namespace ModbusProtocol
                                 {
                                     //byte b1 = resultBuf[i * 2];
                                     //byte b2 = resultBuf[i * 2 + 1];
-                                    registersWords[i] = BitConverter.ToInt16(resultBuf, i * 2);
+                                    registersWords[i] = ModbusRtuOld.ComPortHelper.getWord(resultBuf, i * 2);
+                                    //registersWords[i] = BitConverter.ToInt16(resultBuf, i * 2);
                                 }
 
                                 group.UpdateSignalsAfterRequest(registersWords);
