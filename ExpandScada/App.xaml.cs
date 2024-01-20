@@ -17,12 +17,12 @@ namespace ExpandScada
     public partial class App : Application
     {
         //const string FOLDER_WITH_SCREENS = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ChangedManually";
-        const string FOLDER_WITH_SCREENS = @"C:\Users\admin\Desktop\SCADA\Sources\Project\Screens";
-        const string RESOURCES_FILE_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ResourceStyle\CommonStyle.xaml";
+        const string FOLDER_WITH_SCREENS = @"C:\Users\user\Desktop\Coding\SCADA\Sources\Project\Screens";
+        const string RESOURCES_FILE_PATH = @"C:\Users\user\Desktop\Coding\SCADA\Sources\Tests\WpfUiLibTest1\WpfShower1\TestElements\ResourceStyle\CommonStyle.xaml";
         //const string PROJECT_DB_PATH = "..\\..\\Project\\test1.db"; // TODO doesn't work, why????
-        const string PROJECT_DB_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Project\test1.db";
+        const string PROJECT_DB_PATH = @"C:\Users\user\Desktop\Coding\SCADA\Sources\Project\test1.db";
 
-        const string PROTOCOLS_PATH = @"C:\Users\admin\Desktop\SCADA\Sources\Protocols\Debug";
+        const string PROTOCOLS_PATH = @"C:\Users\user\Desktop\Coding\SCADA\Sources\Protocols\Debug";
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
