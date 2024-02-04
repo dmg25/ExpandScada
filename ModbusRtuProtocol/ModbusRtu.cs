@@ -11,6 +11,14 @@ namespace ModbusProtocol
 {
     public class ModbusRtu : CommunicationProtocol
     {
+        /*      Write one signal
+         * 
+         * 
+         * 
+         * 
+         * 
+         * */
+
 
         public override string Name { get; set; } = "ModbusRtu";
         //ModbusClient modbusClient;
@@ -18,7 +26,7 @@ namespace ModbusProtocol
         Thread pollingThread;
         int pollingInterval;
         bool stopPolling = false;
-        List<ModbusSlave> slaves = new List<ModbusSlave>();
+        Dictionary<int, ModbusSlave> slaves = new Dictionary<int, ModbusSlave>();
 
 
         /// <summary>
@@ -252,6 +260,42 @@ namespace ModbusProtocol
             throw new NotImplementedException();
         }
 
+        public override int GetDeviceIdBySignal(Signal signal)
+        {
+            foreach (var slave in slaves.Values)
+            {
+                foreach (var group in slave.holdingRegisters)
+                {
+                    var signalResult = group.signalsToRequest.FirstOrDefault(x => x.signal == signal);
+                    if (signalResult is not null)
+                    {
+                        return slave.slaveId;
+                    }
+                }
+
+                foreach (var group in slave.inputRegisters)
+                {
+                    var signalResult = group.signalsToRequest.FirstOrDefault(x => x.signal == signal);
+                    if (signalResult is not null)
+                    {
+                        return slave.slaveId;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        public override void WriteSignalToDevice(Signal signal, int deviceId)
+        {
+            if (!slaves.ContainsKey(deviceId))
+            {
+                // TODO log with error
+                return;
+            }
+
+            slaves[deviceId].WriteSignalToDevice(signal);
+        }
 
         Dictionary<string, object> ParseSettingStringToValues(List<SettingsParameter> settings, string settingsString)
         {
@@ -290,11 +334,11 @@ namespace ModbusProtocol
                 Enum.TryParse((string)signalSettings["RegisterDataType"], out ModbusDataType dataType);
                 int numOfRegistersInSignal = (int)dataType;
                 int slaveIdFromSettings = Convert.ToInt32(signalSettings["Device address"]);
-                var foundSlave = slaves.Find(x => x.slaveId == slaveIdFromSettings);
+                var foundSlave = slaves.Values.FirstOrDefault(x => x.slaveId == slaveIdFromSettings);
                 if (foundSlave == null)
                 {
                     foundSlave = new ModbusSlave() { slaveId = slaveIdFromSettings };
-                    slaves.Add(foundSlave);
+                    slaves.Add(slaveIdFromSettings, foundSlave);
                 }
                 Enum.TryParse((string)signalSettings["Type of register"], out RegisterType regType);
                 RegisterType registerType = regType;
@@ -324,7 +368,7 @@ namespace ModbusProtocol
             {
                 foundGroup.startAddress -= numOfRegistersInSignal;
                 foundGroup.registerNum += numOfRegistersInSignal;
-                foundGroup.signalsToRequest.Insert(0, (signal, numOfRegistersInSignal, datatype));
+                foundGroup.signalsToRequest.Insert(0, new SignalWithRegInfo(signal, numOfRegistersInSignal, datatype, registerAddress));
                 return;
             }
 
@@ -332,7 +376,7 @@ namespace ModbusProtocol
             if (foundGroup != null)
             {
                 foundGroup.registerNum += numOfRegistersInSignal;
-                foundGroup.signalsToRequest.Add((signal, numOfRegistersInSignal, datatype));
+                foundGroup.signalsToRequest.Add(new SignalWithRegInfo(signal, numOfRegistersInSignal, datatype, registerAddress));
                 return;
             }
 
@@ -341,7 +385,7 @@ namespace ModbusProtocol
                 startAddress = registerAddress,
                 registerNum = numOfRegistersInSignal
             };
-            newGroup.signalsToRequest.Add((signal, numOfRegistersInSignal, datatype));
+            newGroup.signalsToRequest.Add(new SignalWithRegInfo(signal, numOfRegistersInSignal, datatype, registerAddress));
 
             requestGroups.Add(newGroup);
         }
@@ -352,8 +396,28 @@ namespace ModbusProtocol
         {
             while (!stopPolling)
             {
-                foreach (var slave in slaves)
+                foreach (var slave in slaves.Values)
                 {
+                    // check if we have to write something before polling
+                    while (slave.SignalsToWriteFc6.Any())
+                    {
+                        var signalWithInfo = slave.SignalsToWriteFc6.Dequeue();
+                        short value = Convert.ToInt16(signalWithInfo.signal.ValueToWrite);
+                        bool success = ModbusProtocol.ModbusRtuOld.Modbus.writeRegisterFNC6(
+                            comPort,
+                            (byte)slave.slaveId,
+                            (short)signalWithInfo.registerAddress,
+                            value,
+                            slave.slaveId.ToString()
+                            );
+
+                        if (!success)
+                        {
+                            // TODO alarming or something
+                        }
+                    }
+
+                    // do polling
                     foreach (var group in slave.inputRegisters)
                     {
                         if (comPort.IsOpen)
@@ -381,6 +445,7 @@ namespace ModbusProtocol
                                 group.UpdateSignalsAfterRequest(registersWords);
                             }
                         }
+                        // TODO polling interval must be not here waiting. Here put tiny sleep, but polling must wait outside of this cycle
                         Thread.Sleep(pollingInterval);
                     }
 
@@ -411,6 +476,7 @@ namespace ModbusProtocol
                                 group.UpdateSignalsAfterRequest(registersWords);
                             }
                         }
+                        // TODO polling interval must be not here waiting. Here put tiny sleep, but polling must wait outside of this cycle
                         Thread.Sleep(pollingInterval);
                     }
                 }

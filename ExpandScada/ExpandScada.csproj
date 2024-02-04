@@ -20,6 +20,8 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
 
+
+
   <ItemGroup>
     <None Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

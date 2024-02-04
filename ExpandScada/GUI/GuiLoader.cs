@@ -11,6 +11,9 @@ using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Reflection;
 using ExpandScada.SignalsGateway;
+using ExpandScada.Commands;
+using System.Xml.Linq;
+using Common.Communication;
 
 namespace ExpandScada.GUI
 {
@@ -191,76 +194,6 @@ namespace ExpandScada.GUI
 
             return rootElement;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            //string wholeFile = File.ReadAllText(filePath);
-            //string[] lines = wholeFile.Split("\n");
-
-            //// Find UserControl block
-            //// We know, that before UserControl there is nothing. Special block is ONLY after this block
-            //List<string> userControlLines = new List<string>();
-            //int endOfUserElementIndex = -1;
-            //for (int i = 0; i < lines.Length; i++)
-            //{
-            //    if (lines[i].Contains("</UserControl>"))
-            //    {
-            //        endOfUserElementIndex = i;
-            //        break;
-            //    }
-            //}
-
-            //if (endOfUserElementIndex == -1)
-            //{
-            //    throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: End of UserControl not found. Wrong file structure.");
-            //}
-
-            //// Remove x:Class property
-            //// TODO now it is can be only in first line, maybe will be problems if it will be gone to another line
-            //if (lines[0].Contains("x:Class"))
-            //{
-            //    lines[0] = "<UserControl \r";
-            //}
-
-            //for (int i = 0; i < endOfUserElementIndex + 1; i++)
-            //{
-            //    userControlLines.Add($"{lines[i]}\n");
-            //}
-
-            //string userControlString = string.Join(String.Empty, userControlLines);
-            //rootElement = (UIElement)XamlReader.Parse(userControlString);
-
-            //// Now we can get our additional block for parsing
-            //List<string> specialBlockLines = new List<string>();
-            //for (int i = endOfUserElementIndex + 1; i < lines.Length; i++)
-            //{
-            //    specialBlockLines.Add($"{lines[i]}\n");
-            //}
-
-            //try
-            //{
-            //    LoadAllBindingsForScreen(specialBlockLines, rootElement);
-            //}
-            //catch (Exception ex)
-            //{
-            //    throw new Exception($"Error in screen {Path.GetFileNameWithoutExtension(filePath)}: {ex.Message}");
-            //}
-
-            //return rootElement;
         }
 
         // TODO add normal log messages when exceptions
@@ -274,8 +207,100 @@ namespace ExpandScada.GUI
 
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(string.Join(string.Empty, specialBlockLines));
-            XmlNodeList bindingNodes = doc.GetElementsByTagName("Binding");
 
+            // Load simple bindings
+            XmlNodeList bindingNodes = doc.GetElementsByTagName("Binding");
+            ApplyAllBindingsForScreen(bindingNodes, rootElement);
+
+            // Load commands
+            XmlNodeList commandNodes = doc.GetElementsByTagName("Command");
+
+            foreach (XmlNode commandNode in commandNodes)
+            {
+                // check a button with this name, select it
+                var buttonName = commandNode.Attributes["UiName"].Value;
+                if (buttonName is null || buttonName.Length == 0)
+                {
+                    throw new ArgumentException($"Error in Binding button command node {commandNode.OuterXml}");
+                }
+
+                Button bindedElement = (Button)LogicalTreeHelper.FindLogicalNode(rootElement, buttonName);
+                if (bindedElement == null)
+                {
+                    throw new Exception($"Button with name \"{buttonName}\" doesn't exist in the screen");
+                }
+
+                // load and create all actions
+                XmlNodeList actionNodes = doc.GetElementsByTagName("ButtonAction");
+                List<ButtonAction> executeList = new List<ButtonAction>();
+                foreach (XmlNode actionNode in actionNodes)
+                {
+                    var actionName = actionNode.Attributes["ActionName"].Value;
+                    if (actionName is null || actionName.Length == 0)
+                    {
+                        throw new ArgumentException($"Error in Binding button action node {actionNode.OuterXml}");
+                    }
+
+                    if (!ButtonActions.Actions.ContainsKey(actionName))
+                    {
+                        throw new ArgumentException($"Unknown action with name {actionName}");
+                    }
+
+                    XmlNodeList propertiesNodes = doc.GetElementsByTagName("Property");
+                    Dictionary<string, string> propertiesWithValues = new Dictionary<string, string>();
+                    foreach (XmlNode property in propertiesNodes)
+                    {
+                        var propertyName = property.Attributes["Name"].Value;
+                        var propertyValue = property.InnerText;
+                        if (string.IsNullOrEmpty(propertyName) || string.IsNullOrEmpty(propertyValue))
+                        {
+                            throw new ArgumentException($"Error in Binding action property node {property.OuterXml}");
+                        }
+
+                        if (propertiesWithValues.ContainsKey(propertyName))
+                        {
+                            throw new ArgumentException($"Property {propertyName} already exists in action");
+                        }
+
+                        propertiesWithValues.Add(propertyName, propertyValue);
+                    }
+
+                    var newAction = (ButtonAction)ButtonActions.Actions[actionName].Clone();
+                    newAction.Initialize(propertiesWithValues);
+                    executeList.Add(newAction);
+                }
+
+                if (executeList.Count == 0)
+                {
+                    throw new InvalidOperationException($"Command has no actions inside in the command {commandNode.OuterXml}");
+                }
+
+                // create a command
+                MultiActionCommand newCommand = new MultiActionCommand(executeList);
+
+                // bind a commant to the button
+                bindedElement.Command = newCommand;
+            }
+
+            // XAML on screen1 is done
+            // Need to read parameters depended on action
+            // Create better class for action creation:
+            //      - static, contains list of parameters with names, method to create action with given params
+            //      - here just check properties and call creation of action
+            // Contain these classes in Dictionary
+
+
+
+
+
+        }
+
+
+
+
+
+        static void ApplyAllBindingsForScreen(XmlNodeList bindingNodes, UIElement rootElement)
+        {
             string uiName = string.Empty;
             string propertyName = string.Empty;
             string signalName = string.Empty;
@@ -286,7 +311,7 @@ namespace ExpandScada.GUI
                 propertyName = node.Attributes["PropertyName"].Value;
                 signalName = node.Attributes["SignalName"].Value;
 
-                if (uiName.Length == 0 || propertyName.Length == 0 || signalName.Length == 0 )
+                if (uiName.Length == 0 || propertyName.Length == 0 || signalName.Length == 0)
                 {
                     throw new ArgumentException($"Error in Binding node: {node.OuterXml}");
                 }
@@ -296,7 +321,7 @@ namespace ExpandScada.GUI
                 if (bindedElement == null)
                 {
                     // TODO add screen's name somehow
-                    throw new Exception($"UI element with name \"{uiName}\" isn't exist in the screen");
+                    throw new Exception($"UI element with name \"{uiName}\" doesn't exist in the screen");
                 }
 
                 // Searching for dependency property
@@ -332,13 +357,40 @@ namespace ExpandScada.GUI
                 Binding myBinding = new Binding("TypedValue");
                 myBinding.Source = SignalStorage.allNamedSignals[signalName];
                 BindingOperations.SetBinding(bindedElement, dp, myBinding);
-
-                
-
-                //Type abstr = SignalStorage.allNamedSignals[signalName].GetType();
-
-
             }
+        }
+
+        static void ApplyAllBottonCommandsForScreen(XmlNodeList bindingNodes, UIElement rootElement)
+        {
+            /*  - new nodetype "Command"
+             *  - there is a UiName
+             *      - check this name belongs to button, if not - exception
+             *  - PropertyName not necessary, we know this is Command
+             *  - contains child nodes "Actions" - one command can do a lot of actions
+             *  - Add new property "ActionType"
+             *      - take an action from commands dictionary where they are stored
+             *  
+             *  - depending on command type try to find all required properties in this line
+             *  - create Command object and add there this action with found parameters for execution
+             *  - add this Command to the button
+             *  
+             *  
+             *  ---------------------------------------
+             *  Command example:
+             *      
+             *      Write value to device 
+             *          - property Source local signal
+             *          - property Target device signal
+             *          
+             *          - On execution write value from source to target
+             *              find device in communication channel and call function "write one value" or smth
+             *  
+             *  
+             * */
+
+
+
+
 
 
 

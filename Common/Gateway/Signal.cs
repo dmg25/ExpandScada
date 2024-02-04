@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Common.Communication;
 
 namespace Common.Gateway
 {
@@ -43,10 +44,21 @@ namespace Common.Gateway
             set;
         }
 
+        /// <summary>
+        /// Use it to write values to communication channel. Because Value can be updated in the middle, we can not use just Value
+        /// </summary>
+        public virtual object ValueToWrite
+        {
+            get;
+            set;
+        }
+
         public virtual Type SignalType
         {
             get;
         }
+
+        public CommunicationProtocol AttachedCommunicationProtocol { get; set; } = null;
 
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyChanged([CallerMemberName] string prop = "")
@@ -69,6 +81,7 @@ namespace Common.Gateway
     {
         Type signalType;
         private T _value;
+        private T _valueToWrite;
         public override Type SignalType
         {
             get
@@ -91,6 +104,19 @@ namespace Common.Gateway
                 }
 
                 TypedValue = (T)value; // TESTS ONLY
+                this.OnPropertyChanged();
+            }
+        }
+
+        public override object ValueToWrite
+        {
+            get
+            {
+                return this._valueToWrite;
+            }
+            set
+            {
+                _valueToWrite = (T)value;
                 this.OnPropertyChanged();
             }
         }

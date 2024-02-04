@@ -284,7 +284,7 @@ namespace ModbusProtocol
             {
                 foundGroup.startAddress -= numOfRegistersInSignal;
                 foundGroup.registerNum += numOfRegistersInSignal;
-                foundGroup.signalsToRequest.Insert(0, (signal, numOfRegistersInSignal, ModbusDataType.Word));
+                foundGroup.signalsToRequest.Insert(0, new SignalWithRegInfo(signal, numOfRegistersInSignal, ModbusDataType.Word, registerAddress));
                 return;
             }
 
@@ -292,7 +292,7 @@ namespace ModbusProtocol
             if (foundGroup != null)
             {
                 foundGroup.registerNum += numOfRegistersInSignal;
-                foundGroup.signalsToRequest.Add((signal, numOfRegistersInSignal, ModbusDataType.Word));
+                foundGroup.signalsToRequest.Add(new SignalWithRegInfo(signal, numOfRegistersInSignal, ModbusDataType.Word, registerAddress));
                 return;
             }
 
@@ -301,7 +301,7 @@ namespace ModbusProtocol
                 startAddress = registerAddress,
                 registerNum = numOfRegistersInSignal
             };
-            newGroup.signalsToRequest.Add((signal, numOfRegistersInSignal, ModbusDataType.Word));
+            newGroup.signalsToRequest.Add(new SignalWithRegInfo(signal, numOfRegistersInSignal, ModbusDataType.Word, registerAddress));
 
             requestGroups.Add(newGroup);
         }

@@ -101,5 +101,22 @@ namespace Common.Communication
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Get device ID where given signal attached. Use for initialization, not in cycle!
+        /// </summary>
+        /// <returns>-1 if not found</returns>
+        public virtual int GetDeviceIdBySignal(Signal signal)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Write to device by ID value from given signal
+        /// </summary>
+        public virtual void WriteSignalToDevice(Signal signal, int deviceId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
