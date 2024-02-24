@@ -2,6 +2,7 @@
 using Common.Gateway;
 using System;
 using System.Collections.Generic;
+//using System.Diagnostics;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
@@ -327,7 +328,36 @@ namespace ModbusProtocol
             // !!! TODO this parameter must be calculated by type of signal/register. int 1; float 2, double 4 ...
             //int numOfRegistersInSignal = 1;
 
-            foreach (var signalPair in signals)
+            // TODO was fast and stupid - redo later
+            //-------------------  BLOCK OF STUPIDITY -----------------------------
+            // Do sorting by register type and address, to make less groups
+            List<(Signal signal, RegisterType regtype, int regAddress)> tmpNotSortedList = new List<(Signal signal, RegisterType regtype, int regAddress)>();
+
+            foreach (var signal in signals)
+            {
+                var signalSettings = ParseSettingStringToValues(GetSignalSettings(), signal.settings);
+                Enum.TryParse((string)signalSettings["Type of register"], out RegisterType regType);
+                RegisterType registerType = regType;
+                int registerAddress = Convert.ToInt32(signalSettings["Register Address"]);
+                tmpNotSortedList.Add((signal.signal, registerType, registerAddress));
+            }
+
+            var tmpSortedList = tmpNotSortedList.OrderBy(o => o.regtype).ThenBy(o => o.regAddress);
+
+            List<(Signal signal, string settings)> sortedSignals = new List<(Signal signal, string settings)>();
+
+            foreach (var item in tmpSortedList)
+            {
+                var sing = signals.FirstOrDefault(x => x.signal == item.signal);
+                sortedSignals.Add(sing);
+            }
+
+
+
+            //------------------- END OF THE BLOCK OF STUPIDITY -----------------------------
+
+
+            foreach (var signalPair in sortedSignals)
             {
                 var signalSettings = ParseSettingStringToValues(GetSignalSettings(), signalPair.settings);
 
@@ -358,9 +388,55 @@ namespace ModbusProtocol
             }
         }
 
+        //void FindAllSlavesAndSetupThem(List<(Signal signal, string settings)> signals)
+        //{
+        //    // all signals in list in the loop
+        //    // if in the current signal is slave address, but we have no this slave - create
+        //    // for each new address
+        //    //      check if there is group with the same query type, if not - create
+        //    //      if is - check if the first address is on one more tha ours - add signal to this group in the beginning
+        //    //      or if there is in the end address which less on one than ours - add ti the end.
+        //    //      if nothing of this - create new request group
+
+        //    // !!! TODO this parameter must be calculated by type of signal/register. int 1; float 2, double 4 ...
+        //    //int numOfRegistersInSignal = 1;
+
+        //    // Do sorting first, after that 
+
+        //    foreach (var signalPair in signals)
+        //    {
+        //        var signalSettings = ParseSettingStringToValues(GetSignalSettings(), signalPair.settings);
+
+        //        Enum.TryParse((string)signalSettings["RegisterDataType"], out ModbusDataType dataType);
+        //        int numOfRegistersInSignal = (int)dataType;
+        //        int slaveIdFromSettings = Convert.ToInt32(signalSettings["Device address"]);
+        //        var foundSlave = slaves.Values.FirstOrDefault(x => x.slaveId == slaveIdFromSettings);
+        //        if (foundSlave == null)
+        //        {
+        //            foundSlave = new ModbusSlave() { slaveId = slaveIdFromSettings };
+        //            slaves.Add(slaveIdFromSettings, foundSlave);
+        //        }
+        //        Enum.TryParse((string)signalSettings["Type of register"], out RegisterType regType);
+        //        RegisterType registerType = regType;
+        //        int registerAddress = Convert.ToInt32(signalSettings["Register Address"]);
+
+        //        // TODO add more types of registers and mske it via swith case
+        //        if (registerType == RegisterType.InputRegister)
+        //        {
+        //            AttachSignalToRequestGroup(foundSlave.inputRegisters, signalPair.signal,
+        //                registerAddress, dataType, numOfRegistersInSignal);
+        //        }
+        //        else
+        //        {
+        //            AttachSignalToRequestGroup(foundSlave.holdingRegisters, signalPair.signal,
+        //                registerAddress, dataType, numOfRegistersInSignal);
+        //        }
+        //    }
+        //}
+
 
         void AttachSignalToRequestGroup(List<RequestGroup> requestGroups,
-            Signal signal, int registerAddress, 
+            Signal signal, int registerAddress,
             ModbusDataType datatype, int numOfRegistersInSignal)
         {
             var foundGroup = requestGroups.Find(x => x.startAddress == registerAddress + 1);
@@ -372,7 +448,7 @@ namespace ModbusProtocol
                 return;
             }
 
-            foundGroup = requestGroups.Find(x => x.startAddress + x.registerNum == registerAddress - 1);
+            foundGroup = requestGroups.Find(x => x.startAddress + x.registerNum == registerAddress);
             if (foundGroup != null)
             {
                 foundGroup.registerNum += numOfRegistersInSignal;
@@ -390,8 +466,120 @@ namespace ModbusProtocol
             requestGroups.Add(newGroup);
         }
 
-        // TODO case if we are lost the connection
-        // TODO case if we are lose responce (timeout). maybe additional logic but for future
+
+        //TODO case if we are lost the connection
+        //TODO case if we are lose responce(timeout). maybe additional logic but for future
+        //void Polling()
+        //{
+        //    long testTimDif = 0;
+        //    double testTimAverage = 0;
+        //    int testTimCnt = 0;
+        //    double maxVal = 0;
+        //    DateTime start = DateTime.Now;
+        //    TimeSpan span = new TimeSpan();
+
+        //    while (!stopPolling)
+        //    {
+        //        start = DateTime.Now;
+        //        foreach (var slave in slaves.Values)
+        //        {
+        //            // check if we have to write something before polling
+        //            while (slave.SignalsToWriteFc6.Any())
+        //            {
+        //                var signalWithInfo = slave.SignalsToWriteFc6.Dequeue();
+        //                short value = Convert.ToInt16(signalWithInfo.signal.ValueToWrite);
+        //                bool success = ModbusProtocol.ModbusRtuOld.Modbus.writeRegisterFNC6(
+        //                    comPort,
+        //                    (byte)slave.slaveId,
+        //                    (short)signalWithInfo.registerAddress,
+        //                    value,
+        //                    slave.slaveId.ToString()
+        //                    );
+
+        //                if (!success)
+        //                {
+        //                    // TODO alarming or something
+        //                }
+        //            }
+
+        //            // do polling
+        //            foreach (var group in slave.inputRegisters)
+        //            {
+        //                if (comPort.IsOpen)
+        //                {
+        //                    byte[] resultBuf = new byte[group.registerNum * 2];
+        //                    int readedBytes = ModbusProtocol.ModbusRtuOld.Modbus.readMultipleInputRegistersFNC4(
+        //                        comPort,
+        //                        (byte)slave.slaveId,
+        //                        (short)group.startAddress,
+        //                        (short)group.registerNum,
+        //                        resultBuf,
+        //                        slave.slaveId.ToString());
+
+        //                    if (readedBytes == group.registerNum * 2)
+        //                    {
+        //                        short[] registersWords = new short[group.registerNum];
+        //                        for (int i = 0; i < group.registerNum; i++)
+        //                        {
+        //                            //byte b1 = resultBuf[i * 2];
+        //                            //byte b2 = resultBuf[i * 2 + 1];
+        //                            registersWords[i] = ModbusRtuOld.ComPortHelper.getWord(resultBuf, i * 2);
+        //                            //registersWords[i] = BitConverter.ToInt16(resultBuf, i * 2);
+        //                        }
+
+        //                        group.UpdateSignalsAfterRequest(registersWords);
+        //                    }
+        //                }
+        //                // TODO polling interval must be not here waiting. Here put tiny sleep, but polling must wait outside of this cycle
+        //            }
+
+        //            foreach (var group in slave.holdingRegisters)
+        //            {
+        //                if (comPort.IsOpen)
+        //                {
+        //                    byte[] resultBuf = new byte[group.registerNum * 2];
+        //                    int readedBytes = ModbusProtocol.ModbusRtuOld.Modbus.readMultipleRegistersFNC3(
+        //                        comPort,
+        //                        (byte)slave.slaveId,
+        //                        (short)group.startAddress,
+        //                        (short)group.registerNum,
+        //                        resultBuf,
+        //                        slave.slaveId.ToString());
+
+        //                    if (readedBytes == group.registerNum * 2)
+        //                    {
+        //                        short[] registersWords = new short[group.registerNum];
+        //                        for (int i = 0; i < group.registerNum; i++)
+        //                        {
+        //                            //byte b1 = resultBuf[i * 2];
+        //                            //byte b2 = resultBuf[i * 2 + 1];
+        //                            registersWords[i] = ModbusRtuOld.ComPortHelper.getWord(resultBuf, i * 2);
+        //                            //registersWords[i] = BitConverter.ToInt16(resultBuf, i * 2);
+        //                        }
+
+        //                        group.UpdateSignalsAfterRequest(registersWords);
+        //                    }
+        //                }
+        //                // TODO polling interval must be not here waiting. Here put tiny sleep, but polling must wait outside of this cycle
+        //            }
+        //        }
+
+        //        Thread.Sleep(pollingInterval);
+
+        //        testTimCnt++;
+        //        span = DateTime.Now - start;
+        //        testTimDif += (long)span.TotalMilliseconds;
+
+        //        if (span.TotalMilliseconds > maxVal)
+        //        {
+        //            maxVal = span.TotalMilliseconds;
+        //        }
+
+        //        testTimAverage = testTimDif / testTimCnt;
+
+        //    }
+        //}
+
         void Polling()
         {
             while (!stopPolling)
@@ -446,7 +634,6 @@ namespace ModbusProtocol
                             }
                         }
                         // TODO polling interval must be not here waiting. Here put tiny sleep, but polling must wait outside of this cycle
-                        Thread.Sleep(pollingInterval);
                     }
 
                     foreach (var group in slave.holdingRegisters)
@@ -476,10 +663,12 @@ namespace ModbusProtocol
                                 group.UpdateSignalsAfterRequest(registersWords);
                             }
                         }
-                        // TODO polling interval must be not here waiting. Here put tiny sleep, but polling must wait outside of this cycle
-                        Thread.Sleep(pollingInterval);
                     }
                 }
+
+                Thread.Sleep(pollingInterval);
+                //Task.Delay(pollingInterval);
+                //Thread.Sleep(500);
             }
         }
 

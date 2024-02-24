@@ -80,7 +80,8 @@ namespace ModbusProtocol
         internal void UpdateSignalsAfterRequest(short[] responceResultWords)
         {
             int registerCounter = 0;
-            for (int i = 0; i < signalsToRequest.Count;)
+            int regIndex = 0;
+            for (int i = 0; i < signalsToRequest.Count;i++)
             {
                 // check datatype of each signal and convert 1-2-4 words to this type
                 // move index on 1-2-4 values as well
@@ -89,20 +90,20 @@ namespace ModbusProtocol
                 switch (signalsToRequest[i].datatype)
                 {
                     case ModbusDataType.Word:
-                        signalsToRequest[i].signal.Value = (int)responceResultWords[i];
-                        i++;
+                        signalsToRequest[i].signal.Value = (int)responceResultWords[regIndex];
+                        regIndex++;
                         break;
                     case ModbusDataType.Float:
                         signalsToRequest[i].signal.Value = ModbusRtuOld.ComPortHelper.getFloat(
-                            responceResultWords, i, ModbusRtuOld.FLOAT_BYTE_ORDER.F1032);
-                        i += 2;
+                            responceResultWords, regIndex, ModbusRtuOld.FLOAT_BYTE_ORDER.F1032);
+                        regIndex += 2;
                         break;
                     //case ModbusDataType.Double:
                     //    signalsToRequest[i].signal.Value = responceResultWords[i];
                     //    break;
                     default:
-                        signalsToRequest[i].signal.Value = responceResultWords[i];
-                        i++;
+                        signalsToRequest[i].signal.Value = responceResultWords[regIndex];
+                        regIndex++;
                         break;
                 }
 

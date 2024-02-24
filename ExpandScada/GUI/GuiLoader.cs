@@ -215,6 +215,9 @@ namespace ExpandScada.GUI
             // Load commands
             XmlNodeList commandNodes = doc.GetElementsByTagName("Command");
 
+             //FIND why on UI for channel 3 and 4 I see speed values from channels 2 and 3 ???
+             //CHeck polling speed - looks slow, try compare with external poller
+
             foreach (XmlNode commandNode in commandNodes)
             {
                 // check a button with this name, select it
@@ -231,7 +234,9 @@ namespace ExpandScada.GUI
                 }
 
                 // load and create all actions
-                XmlNodeList actionNodes = doc.GetElementsByTagName("ButtonAction");
+                //XmlNodeList actionNodes = doc.GetElementsByTagName("ButtonAction");
+                XmlNodeList actionNodes = commandNode.ChildNodes;
+
                 List<ButtonAction> executeList = new List<ButtonAction>();
                 foreach (XmlNode actionNode in actionNodes)
                 {
@@ -246,7 +251,9 @@ namespace ExpandScada.GUI
                         throw new ArgumentException($"Unknown action with name {actionName}");
                     }
 
-                    XmlNodeList propertiesNodes = doc.GetElementsByTagName("Property");
+                    //XmlNodeList propertiesNodes = doc.GetElementsByTagName("Property");
+                    XmlNodeList propertiesNodes = actionNode.ChildNodes;
+
                     Dictionary<string, string> propertiesWithValues = new Dictionary<string, string>();
                     foreach (XmlNode property in propertiesNodes)
                     {
@@ -387,12 +394,6 @@ namespace ExpandScada.GUI
              *  
              *  
              * */
-
-
-
-
-
-
 
 
         }

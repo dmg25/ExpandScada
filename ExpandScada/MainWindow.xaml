@@ -8,11 +8,9 @@
         Title="MainWindow" Height="450" Width="800" Closing="Window_Closing">
     <Grid x:Name="tmpRoot">
         <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        <Button Content="testtt" Grid.Row="0" Click="Button_Click"/>
-        <Grid x:Name="rootOfRoots" Grid.Row="1">
+        <Grid x:Name="rootOfRoots">
 
         </Grid>
     </Grid>
